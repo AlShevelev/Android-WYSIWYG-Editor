@@ -53,7 +53,7 @@
             >
             <com.github.irshulx.Editor
                 android:layout_width="match_parent"
-                android:id="@+id/editor"
+                android:id="@+id/editorWidget"
                 app:render_type="Editor"
                 app:placeholder="Start writing here..."
                 android:paddingTop="10dp"
