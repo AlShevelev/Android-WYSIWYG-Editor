@@ -119,7 +119,7 @@ class EditorTestActivity : AppCompatActivity() {
         editor.headingTypeface = headingTypeface
         editor.contentTypeface = contentTypeface
         editor.setDividerLayout(R.layout.tmpl_divider_layout)
-        editor.setEditorImageLayout(R.layout.tmpl_image_view)
+        //editor.setEditorImageLayout(R.layout.tmpl_image_view)
         editor.setListItemLayout(R.layout.tmpl_list_item)
         //editor.setNormalTextSize(10);
         // editor.setEditorTextColor("#FF3333");

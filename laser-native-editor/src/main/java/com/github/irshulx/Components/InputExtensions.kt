@@ -297,7 +297,9 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             editorCore.parentView!!.addView(view, position)
             editorCore.activeView = view
             val handler = android.os.Handler()
-            handler.postDelayed({ setFocus(view) }, 0)
+            handler.postDelayed({
+                setFocus(view)
+            }, 0)
             editorCore.activeView = view
             return view
         } else {

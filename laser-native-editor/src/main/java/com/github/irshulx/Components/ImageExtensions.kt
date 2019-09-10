@@ -50,6 +50,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
              * for subtitle
              */
             val textView = view.findViewById<EditText>(R.id.desc)
+
             val subTitleNode = getNodeInstance(textView)
             val descTag = textView.tag as EditorControl
             subTitleNode.contentStyles = descTag.editorTextStyles
@@ -126,7 +127,9 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         val childLayout = (editorCore.context as Activity).layoutInflater.inflate(this.editorImageLayout, null)
         val imageView = childLayout.findViewById<ImageView>(R.id.imageView)
         val lblStatus = childLayout.findViewById<TextView>(R.id.lblStatus)
+
         val desc = childLayout.findViewById<CustomEditText>(R.id.desc)
+
         if (!url.isNullOrEmpty()) {
             loadImageUsingLib(url, imageView)
         } else {
@@ -145,7 +148,6 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         childLayout.tag = createImageTag(if (hasUploaded) url else uuid)
         desc.tag = createSubTitleTag()
 
-
         desc.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
             if (!hasFocus) {
                 desc.clearFocus()
@@ -159,6 +161,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         }
         if (!subTitle.isNullOrEmpty())
             componentsWrapper!!.inputExtensions!!.setText(desc, subTitle)
+
         if (editorCore.renderType === RenderType.EDITOR) {
             BindEvents(childLayout)
             if (!hasUploaded) {
@@ -371,6 +374,8 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         })
 
         imageView.setOnClickListener { btn_remove.visibility = View.VISIBLE }
-        imageView.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> btn_remove.visibility = if (hasFocus) View.VISIBLE else View.GONE }
+        imageView.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
+            btn_remove.visibility = if (hasFocus) View.VISIBLE else View.GONE
+        }
     }
 }

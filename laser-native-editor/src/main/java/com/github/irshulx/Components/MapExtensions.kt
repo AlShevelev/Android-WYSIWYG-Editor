@@ -88,7 +88,10 @@ class MapExtensions(internal var editorCore: EditorCore) : EditorComponent(edito
 
         val btn = childLayout.findViewById<View>(R.id.btn_remove)
         imageView.setOnClickListener { btn.visibility = View.VISIBLE }
-        imageView.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> btn.visibility = if (hasFocus) View.VISIBLE else View.INVISIBLE }
+        imageView.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
+            btn.visibility = if (hasFocus) View.VISIBLE else View.INVISIBLE
+        }
+
         btn.setOnClickListener { editorCore.parentView!!.removeView(childLayout) }
         val control = editorCore.createTag(EditorType.MAP)
         control.cords = cords

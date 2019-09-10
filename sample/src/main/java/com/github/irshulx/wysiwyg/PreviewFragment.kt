@@ -61,7 +61,7 @@ class PreviewFragment : Fragment() {
         renderer.headingTypeface = headingTypeface
         renderer.contentTypeface = contentTypeface
         renderer.setDividerLayout(R.layout.tmpl_divider_layout)
-        renderer.setEditorImageLayout(R.layout.tmpl_image_view)
+        //renderer.setEditorImageLayout(R.layout.tmpl_image_view)
         renderer.setListItemLayout(R.layout.tmpl_list_item)
         val content = mSerialized
         val Deserialized = renderer.getContentDeserialized(content!!)
