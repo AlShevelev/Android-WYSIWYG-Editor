@@ -4,5 +4,5 @@ enum class EditorTextStyle {
     BOLD,
     ITALIC,
     NORMAL,
-    BOLDITALIC
+    BOLD_ITALIC
 }

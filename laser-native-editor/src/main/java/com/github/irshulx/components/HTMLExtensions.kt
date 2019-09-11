@@ -1,4 +1,4 @@
-package com.github.irshulx.Components
+package com.github.irshulx.components
 
 import com.github.irshulx.EditorCore
 import com.github.irshulx.models.EditorType

@@ -1,4 +1,4 @@
-package com.github.irshulx.Components
+package com.github.irshulx.components
 
 import android.graphics.Canvas
 import android.graphics.Paint

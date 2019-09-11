@@ -1,11 +1,9 @@
-package com.github.irshulx.Components
+package com.github.irshulx.components
 
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.view.ContextThemeWrapper
@@ -16,11 +14,12 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.text.style.CharacterStyle
+import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.util.Linkify
 import android.util.Log
 import android.util.TypedValue
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -33,6 +32,7 @@ import com.github.irshulx.EditorCore
 import com.github.irshulx.R
 import com.github.irshulx.Utilities.FontCache
 import com.github.irshulx.Utilities.Utilities
+import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.EditorTextStyle
 import com.github.irshulx.models.EditorControl
@@ -62,10 +62,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     var contentTypeface: Map<Int, String>? = null
     var headingTypeface: Map<Int, String>? = null
     private var lineSpacing = -1f
-
-    private var lastX = -1f
-    private var lastY = -1f
-
 
     fun getFontFace(): String {
         return editorCore.context.resources.getString(fontFace)
@@ -128,24 +124,28 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         textView.text = toReplace
     }
 
+    fun updateTextColor(color: String, editText: TextView?) {
+        try {
+            val translatedColor = translateColor(color)
 
-    private fun getNewTextView(text: CharSequence?): TextView {
-        val textView = TextView(ContextThemeWrapper(this.editorCore.context, R.style.WysiwygEditText))
-        addEditableStyling(textView)
-        val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        textView.layoutParams = params
+            val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
 
-        if (!TextUtils.isEmpty(text)) {
-            val text = Html.fromHtml(text.toString())
-            val toReplace = noTrailingwhiteLines(text)
-            textView.text = toReplace
-            Linkify.addLinks(textView, Linkify.ALL)
+            val tag = editorCore.getControlTag(editTextLocal)
+            if (tag.textSettings == null) {
+                tag.textSettings = TextSettings(translatedColor)
+            }
+            else {
+                tag.textSettings!!.textColor = translatedColor
+            }
+
+            editTextLocal.tag = tag
+
+            updateTextString(editTextLocal) {
+                ForegroundColorSpan(Color.parseColor(translatedColor))
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
         }
-
-        if (this.lineSpacing != -1f) {
-            setLineSpacing(textView, this.lineSpacing)
-        }
-        return textView
     }
 
     fun setLineSpacing(textView: TextView, lineHeight: Float) {
@@ -314,111 +314,105 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     }
 
     private fun isEditorTextStyleContentStyles(editorTextStyle: EditorTextStyle): Boolean {
-        return editorTextStyle === EditorTextStyle.BOLD || editorTextStyle === EditorTextStyle.BOLDITALIC || editorTextStyle === EditorTextStyle.ITALIC
+        return editorTextStyle === EditorTextStyle.BOLD || editorTextStyle === EditorTextStyle.BOLD_ITALIC || editorTextStyle === EditorTextStyle.ITALIC
     }
 
-    fun boldifyText(tag: EditorControl, editText: TextView) {
+    fun updateTextStyle(style: EditorTextStyle, editText: TextView?) {
+        try {
+            val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
+
+            // Process the operation only if a selection area exists
+            editTextLocal.selectionArea
+                ?.let {
+                    val tag = editorCore.getControlTag(editTextLocal)
+
+                    if (isEditorTextStyleContentStyles(style)) {
+                        if (style === EditorTextStyle.BOLD) {
+                            boldifyText(tag, editTextLocal)
+                        } else if (style === EditorTextStyle.ITALIC) {
+                            italicizeText(tag, editTextLocal)
+                        }
+                        return
+                    }
+                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun boldifyText(tag: EditorControl, editText: CustomEditText) {
         lateinit var newTag: EditorControl
 
         when {
             editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD) -> {
                 newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD, Op.DELETE)
-                editText.typeface = getTypeface(Typeface.NORMAL)
+                updateTextString(editText, Typeface.NORMAL)
             }
 
-            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLDITALIC) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLDITALIC, Op.DELETE)
+            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD_ITALIC) -> {
+                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.DELETE)
                 newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.ITALIC, Op.INSERT)
-                editText.typeface = getTypeface(Typeface.ITALIC)
+                updateTextString(editText, Typeface.ITALIC)
             }
 
             editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.ITALIC) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLDITALIC, Op.INSERT)
+                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.INSERT)
                 newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.ITALIC, Op.DELETE)
-                editText.typeface = getTypeface(Typeface.BOLD_ITALIC)
+                updateTextString(editText, Typeface.BOLD_ITALIC)
             }
 
             else -> {
                 newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD, Op.INSERT)
-
-
-                // startSelection == endSelection - no selection
-                // startSelection - the index of a letter just after a cursor
-                val startSelection = editText.selectionStart
-                val endSelection = editText.selectionEnd
-
-                // Set bold
-                val text = SpannableStringBuilder(editText.text)
-                text.setSpan(StyleSpan(Typeface.BOLD), startSelection, endSelection, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
-
-                // Put text
-                editText.text = text
-
-                // Restore selection
-                val edit = editText as EditText
-                //            edit.setSelection(startSelection, endSelection);
-
-                // Copy paste floating menu restoration
-                if (lastX != -1f) {
-                    Handler(Looper.getMainLooper()).post {
-                        edit.dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_DOWN, lastX, lastY, 0))
-                        edit.setSelection(startSelection, endSelection)
-                    }
-
-                    Handler(Looper.getMainLooper()).postDelayed({ edit.dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis() + 450, SystemClock.uptimeMillis() + 450, MotionEvent.ACTION_UP, lastX, lastY, 0)) }, 450)
-                }
-
-                editText.setOnTouchListener { v, event ->
-                    if (event.actionMasked == MotionEvent.ACTION_UP) {
-                        lastX = event.x
-                        lastY = event.y
-                    }
-                    false
-                }
-
-                //            editText.setTypeface(getTypeface(textMode, Typeface.BOLD));
+                updateTextString(editText, Typeface.BOLD)
             }
         }
         editText.tag = newTag
     }
 
-    fun italicizeText(tag: EditorControl, editText: TextView) {
-        var tag = tag
+    private fun italicizeText(tag: EditorControl, editText: CustomEditText) {
+        lateinit var newTag: EditorControl
 
-        if (editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.ITALIC)) {
-            tag = editorCore.updateTagStyle(tag, EditorTextStyle.ITALIC, Op.DELETE)
-            editText.typeface = getTypeface(Typeface.NORMAL)
-        } else if (editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLDITALIC)) {
-            tag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLDITALIC, Op.DELETE)
-            tag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD, Op.INSERT)
-            editText.typeface = getTypeface(Typeface.BOLD)
-        } else if (editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD)) {
-            tag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLDITALIC, Op.INSERT)
-            tag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD, Op.DELETE)
-            editText.typeface = getTypeface(Typeface.BOLD_ITALIC)
-        } else {
-            tag = editorCore.updateTagStyle(tag, EditorTextStyle.ITALIC, Op.INSERT)
-            editText.typeface = getTypeface(Typeface.ITALIC)
+        when {
+            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.ITALIC) -> {
+                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.ITALIC, Op.DELETE)
+                updateTextString(editText, Typeface.NORMAL)
+            }
+
+            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD_ITALIC) -> {
+                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.DELETE)
+                newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.BOLD, Op.INSERT)
+                updateTextString(editText, Typeface.BOLD)
+            }
+
+            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD) -> {
+                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.INSERT)
+                newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.BOLD, Op.DELETE)
+                updateTextString(editText, Typeface.BOLD_ITALIC)
+            }
+
+            else -> {
+                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.ITALIC, Op.INSERT)
+                updateTextString(editText, Typeface.ITALIC)
+            }
         }
-        editText.tag = tag
+        editText.tag = newTag
     }
 
-    fun updateTextStyle(style: EditorTextStyle, editText: TextView?) {
-        try {
-            val editTextLocal = editText ?: editorCore.activeView as EditText
-            
-            val tag = editorCore.getControlTag(editTextLocal)
+    private fun updateTextString(editText: CustomEditText, typeFace: Int) =
+        updateTextString(editText) {
+            StyleSpan(typeFace)
+        }
 
-            if (isEditorTextStyleContentStyles(style)) {
-                if (style === EditorTextStyle.BOLD) {
-                    boldifyText(tag, editTextLocal)
-                } else if (style === EditorTextStyle.ITALIC) {
-                    italicizeText(tag, editTextLocal)
-                }
-                return
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+    private fun updateTextString(editText: CustomEditText, createSpan: () -> CharacterStyle) {
+        editText.selectionArea?.let { selection ->
+            val text = SpannableStringBuilder(editText.text)
+            text.setSpan(createSpan(), selection.first, selection.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+            text.setSpan(ForegroundColorSpan(Color.RED), selection.first, selection.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+
+            // Put text
+            editText.text = text
+
+            editText.restoreFloatingMenu(selection)
         }
     }
 
@@ -496,7 +490,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
      * returns the appropriate typeface
      *
      * @param mode  => whether heading (0) or content(1)
-     * @param style => NORMAL, BOLD, BOLDITALIC, ITALIC
+     * @param style => NORMAL, BOLD, BOLD_ITALIC, ITALIC
      * @return typeface
      */
     fun getTypeface(style: Int): Typeface? =
@@ -559,44 +553,10 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         return editorCore.getControlType(editorCore.parentView!!.getChildAt(position)) === EditorType.INPUT
     }
 
-
-    fun updateTextColor(color: String?, editText: TextView?) {
-        try {
-            var colorLocal = color
-
-            if (colorLocal!!.contains("rgb")) {
-                val c = Pattern.compile("rgb *\\( *([0-9]+), *([0-9]+), *([0-9]+) *\\)")
-                val m = c.matcher(colorLocal)
-                if (m.matches()) {
-                    val r = Integer.parseInt(m.group(1))
-                    val g = Integer.parseInt(m.group(2))
-                    val b = Integer.parseInt(m.group(3))
-                    colorLocal = String.format(Locale.getDefault(), "#%02X%02X%02X", r, g, b)
-                }
-            }
-
-            val editTextLocal = editText ?: editorCore.activeView as EditText
-
-            val tag = editorCore.getControlTag(editTextLocal)
-            if (tag.textSettings == null) {
-                tag.textSettings = TextSettings(colorLocal)
-            }
-            else {
-                tag.textSettings!!.textColor = colorLocal
-            }
-
-            editTextLocal.tag = tag
-            editTextLocal.setTextColor(Color.parseColor(colorLocal))
-        } catch (ex: Exception) {
-            Log.e(EditorCore.TAG, ex.message)
-        }
-
-    }
-
     fun applyStyles(editText: TextView, element: Element) {
         val styles = componentsWrapper!!.htmlExtensions!!.getStyleMap(element)
         if (styles.containsKey("color")) {
-            updateTextColor(styles["color"], editText)
+            updateTextColor(styles["color"]!!, editText)
         }
     }
 
@@ -611,7 +571,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             for (style in item.contentStyles!!) {
                 when (style) {
                     EditorTextStyle.BOLD -> tmpl = tmpl.replace("{{\$content}}", "<b>{{\$content}}</b>")
-                    EditorTextStyle.BOLDITALIC -> tmpl = tmpl.replace("{{\$content}}", "<b><i>{{\$content}}</i></b>")
+                    EditorTextStyle.BOLD_ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<b><i>{{\$content}}</i></b>")
                     EditorTextStyle.ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<i>{{\$content}}</i>")
                     EditorTextStyle.NORMAL -> {
                         tmpl = tmpl.replace("{{\$tag}}", "p")
@@ -651,7 +611,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             }
 
             if (!TextUtils.isEmpty(node.textSettings!!.textColor)) {
-                updateTextColor(node.textSettings!!.textColor, view)
+                updateTextColor(node.textSettings!!.textColor!!, view)
             }
         }
     }
@@ -665,5 +625,38 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
     fun setLineSpacing(lineSpacing: Float) {
         this.lineSpacing = lineSpacing
+    }
+
+    private fun getNewTextView(text: CharSequence?): TextView {
+        val textView = TextView(ContextThemeWrapper(this.editorCore.context, R.style.WysiwygEditText))
+        addEditableStyling(textView)
+        val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        textView.layoutParams = params
+
+        if (!TextUtils.isEmpty(text)) {
+            val text = Html.fromHtml(text.toString())
+            val toReplace = noTrailingwhiteLines(text)
+            textView.text = toReplace
+            Linkify.addLinks(textView, Linkify.ALL)
+        }
+
+        if (this.lineSpacing != -1f) {
+            setLineSpacing(textView, this.lineSpacing)
+        }
+        return textView
+    }
+
+    private fun translateColor(color: String): String {
+        if (color.contains("rgb")) {
+            val c = Pattern.compile("rgb *\\( *([0-9]+), *([0-9]+), *([0-9]+) *\\)")
+            val m = c.matcher(color)
+            if (m.matches()) {
+                val r = Integer.parseInt(m.group(1))
+                val g = Integer.parseInt(m.group(2))
+                val b = Integer.parseInt(m.group(3))
+                return String.format(Locale.getDefault(), "#%02X%02X%02X", r, g, b)
+            }
+        }
+        return color
     }
 }

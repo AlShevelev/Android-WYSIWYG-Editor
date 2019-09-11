@@ -1,4 +1,4 @@
-package com.github.irshulx.Components
+package com.github.irshulx.components
 
 class ComponentsWrapper(
     val inputExtensions: InputExtensions?,

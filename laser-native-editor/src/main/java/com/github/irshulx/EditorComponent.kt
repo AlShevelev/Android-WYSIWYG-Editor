@@ -2,15 +2,12 @@ package com.github.irshulx
 
 import android.view.View
 
-import com.github.irshulx.Components.ComponentsWrapper
+import com.github.irshulx.components.ComponentsWrapper
 import com.github.irshulx.models.EditorContent
-import com.github.irshulx.models.EditorControl
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.Node
 
 import org.jsoup.nodes.Element
-
-import java.util.ArrayList
 
 abstract class EditorComponent(private val editorCore: EditorCore) {
     protected var componentsWrapper: ComponentsWrapper? = null

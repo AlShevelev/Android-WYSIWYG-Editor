@@ -1,4 +1,4 @@
-package com.github.irshulx.Components
+package com.github.irshulx.components
 
 import android.app.Activity
 import android.graphics.Color
@@ -20,7 +20,6 @@ import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.Node
 import com.github.irshulx.models.RenderType
 
-import org.jsoup.nodes.Attribute
 import org.jsoup.nodes.Element
 
 import java.util.HashMap

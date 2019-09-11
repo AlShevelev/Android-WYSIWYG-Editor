@@ -14,8 +14,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
-import com.github.irshulx.Components.*
+import com.github.irshulx.components.*
 import com.github.irshulx.Utilities.Utilities
+import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element

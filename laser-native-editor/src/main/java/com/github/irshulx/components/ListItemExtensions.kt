@@ -1,4 +1,4 @@
-package com.github.irshulx.Components
+package com.github.irshulx.components
 
 import android.app.Activity
 import android.content.Context
@@ -23,6 +23,7 @@ import android.widget.TextView
 import com.github.irshulx.EditorComponent
 import com.github.irshulx.EditorCore
 import com.github.irshulx.R
+import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.EditorControl
 import com.github.irshulx.models.EditorType

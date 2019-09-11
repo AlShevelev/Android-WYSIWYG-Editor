@@ -1,4 +1,4 @@
-package com.github.irshulx.Components
+package com.github.irshulx.components
 
 import android.app.Activity
 import android.content.Intent
@@ -24,6 +24,7 @@ import com.bumptech.glide.request.target.Target
 import com.github.irshulx.EditorComponent
 import com.github.irshulx.EditorCore
 import com.github.irshulx.R
+import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.*
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
