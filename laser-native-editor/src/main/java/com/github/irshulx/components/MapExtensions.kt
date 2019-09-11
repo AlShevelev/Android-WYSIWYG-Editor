@@ -10,24 +10,21 @@ import com.github.irshulx.R
 import com.github.irshulx.Utilities.Utilities
 import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.EditorContent
-import com.github.irshulx.models.EditorControl
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.Node
 import com.github.irshulx.models.RenderType
+import com.github.irshulx.models.control_metadata.MapMetadata
 import org.jsoup.nodes.Element
 
-/**
- * Created by mkallingal on 5/1/2016.
- */
 class MapExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
     private var mapExtensionTemplate = R.layout.image_view
 
     override fun getContent(view: View): Node {
         val node = getNodeInstance(view)
-        val mapTag = view.tag as EditorControl
+        val metadata = view.tag as MapMetadata
         val desc = (view.findViewById<View>(R.id.descriptionText) as CustomEditText).text
 
-        mapTag.cords?.let { node.content!!.add(it) }
+        node.content!!.add(metadata.cords)
         node.content!!.add(if (!desc.isNullOrEmpty()) desc.toString() else "")
 
         return node
@@ -93,9 +90,8 @@ class MapExtensions(internal var editorCore: EditorCore) : EditorComponent(edito
         }
 
         btn.setOnClickListener { editorCore.parentView!!.removeView(childLayout) }
-        val control = editorCore.createTag(EditorType.MAP)
-        control.cords = cords
-        childLayout.tag = control
+        val metadata = MapMetadata(EditorType.MAP, cords)
+        childLayout.tag = metadata
         val Index = editorCore.determineIndex(EditorType.MAP)
         editorCore.parentView!!.addView(childLayout, Index)
         if (insertEditText) {

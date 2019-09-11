@@ -15,6 +15,7 @@ import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.Node
 import com.github.irshulx.models.RenderType
+import com.github.irshulx.models.control_metadata.ImageMetadata
 
 import org.jsoup.nodes.Element
 
@@ -50,7 +51,7 @@ class DividerExtensions(internal var editorCore: EditorCore) : EditorComponent(e
     fun insertDivider(index: Int) {
         var index = index
         val view = (editorCore.context as Activity).layoutInflater.inflate(this.dividerLayout, null)
-        view.tag = editorCore.createTag(EditorType.HR)
+        view.tag = ImageMetadata(EditorType.HR)
         if (index == -1) {
             index = editorCore.determineIndex(EditorType.HR)
         }

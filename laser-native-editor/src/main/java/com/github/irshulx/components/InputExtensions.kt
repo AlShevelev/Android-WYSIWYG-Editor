@@ -18,7 +18,6 @@ import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.util.Linkify
-import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
@@ -35,7 +34,6 @@ import com.github.irshulx.Utilities.Utilities
 import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.EditorTextStyle
-import com.github.irshulx.models.EditorControl
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.HtmlTag
 import com.github.irshulx.models.Node
@@ -51,6 +49,7 @@ import java.util.Locale
 import java.util.regex.Pattern
 
 import com.github.irshulx.models.TextSetting.TEXT_COLOR
+import com.github.irshulx.models.control_metadata.InputMetadata
 
 class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
     var defaultTextColor = "#000000"
@@ -71,13 +70,11 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         this.fontFace = fontFace
     }
 
-
     override fun getContent(view: View): Node {
         val node = this.getNodeInstance(view)
-        val _text = view as EditText
-        val tag = view.getTag() as EditorControl
+        val tag = view.getTag() as InputMetadata
         node.contentStyles = tag.editorTextStyles
-        node.content!!.add(Html.toHtml(_text.text))
+        node.content!!.add(Html.toHtml((view as EditText).text))
         node.textSettings = tag.textSettings
         return node
     }
@@ -130,15 +127,15 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
             val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
 
-            val tag = editorCore.getControlTag(editTextLocal)
-            if (tag.textSettings == null) {
-                tag.textSettings = TextSettings(translatedColor)
+            val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
+            if (metadata.textSettings == null) {
+                metadata.textSettings = TextSettings(translatedColor)
             }
             else {
-                tag.textSettings!!.textColor = translatedColor
+                metadata.textSettings!!.textColor = translatedColor
             }
 
-            editTextLocal.tag = tag
+            editTextLocal.tag = metadata
 
             updateTextString(editTextLocal) {
                 ForegroundColorSpan(Color.parseColor(translatedColor))
@@ -153,7 +150,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         textView.setLineSpacing((Utilities.dpToPx(editorCore.context, lineHeight) - fontHeight).toFloat(), 1f)
     }
 
-    fun getNewEditTextInst(hint: String?, text: CharSequence?): CustomEditText {
+    private fun getNewEditTextInst(hint: String?, text: CharSequence?): CustomEditText {
         val editText = CustomEditText(ContextThemeWrapper(this.editorCore.context, R.style.WysiwygEditText))
         addEditableStyling(editText)
         editText.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -168,9 +165,10 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
          * create tag for the editor
          */
 
-        val editorTag = editorCore.createTag(EditorType.INPUT)
-        editorTag.textSettings = TextSettings(this.defaultTextColor)
-        editText.tag = editorTag
+        val metadata = InputMetadata(EditorType.INPUT)
+        metadata.textSettings = TextSettings(this.defaultTextColor)
+        editText.tag = metadata
+
         editText.setBackgroundDrawable(ContextCompat.getDrawable(this.editorCore.context, R.drawable.invisible_edit_text))
 
         editText.setOnKeyListener { v, keyCode, event ->
@@ -297,20 +295,10 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             return view
         } else {
             val view = getNewTextView(text)
-            view.tag = editorCore.createTag(EditorType.INPUT)
+            view.tag = InputMetadata(EditorType.INPUT)
             editorCore.parentView!!.addView(view)
             return view
         }
-    }
-
-
-    private fun reWriteTags(tag: EditorControl, styleToAdd: EditorTextStyle): EditorControl {
-        var tag = tag
-        val tags = arrayOf(EditorTextStyle.NORMAL)
-        for (style in tags)
-            tag = editorCore.updateTagStyle(tag, style, Op.DELETE)
-        tag = editorCore.updateTagStyle(tag, styleToAdd, Op.INSERT)
-        return tag
     }
 
     private fun isEditorTextStyleContentStyles(editorTextStyle: EditorTextStyle): Boolean {
@@ -324,13 +312,13 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea
                 ?.let {
-                    val tag = editorCore.getControlTag(editTextLocal)
+                    val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
 
                     if (isEditorTextStyleContentStyles(style)) {
                         if (style === EditorTextStyle.BOLD) {
-                            boldifyText(tag, editTextLocal)
+                            boldifyText(metadata, editTextLocal)
                         } else if (style === EditorTextStyle.ITALIC) {
-                            italicizeText(tag, editTextLocal)
+                            italicizeText(metadata, editTextLocal)
                         }
                         return
                     }
@@ -340,62 +328,62 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         }
     }
 
-    private fun boldifyText(tag: EditorControl, editText: CustomEditText) {
-        lateinit var newTag: EditorControl
+    private fun boldifyText(metadata: InputMetadata, editText: CustomEditText) {
+        lateinit var newMetadata: InputMetadata
 
         when {
-            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD, Op.DELETE)
+            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD) -> {
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD, Op.DELETE)
                 updateTextString(editText, Typeface.NORMAL)
             }
 
-            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD_ITALIC) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.DELETE)
-                newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.ITALIC, Op.INSERT)
+            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD_ITALIC) -> {
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Op.DELETE)
+                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.ITALIC, Op.INSERT)
                 updateTextString(editText, Typeface.ITALIC)
             }
 
-            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.ITALIC) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.INSERT)
-                newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.ITALIC, Op.DELETE)
+            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.ITALIC) -> {
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Op.INSERT)
+                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.ITALIC, Op.DELETE)
                 updateTextString(editText, Typeface.BOLD_ITALIC)
             }
 
             else -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD, Op.INSERT)
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD, Op.INSERT)
                 updateTextString(editText, Typeface.BOLD)
             }
         }
-        editText.tag = newTag
+        editText.tag = newMetadata
     }
 
-    private fun italicizeText(tag: EditorControl, editText: CustomEditText) {
-        lateinit var newTag: EditorControl
+    private fun italicizeText(metadata: InputMetadata, editText: CustomEditText) {
+        lateinit var newMetadata: InputMetadata
 
         when {
-            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.ITALIC) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.ITALIC, Op.DELETE)
+            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.ITALIC) -> {
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.ITALIC, Op.DELETE)
                 updateTextString(editText, Typeface.NORMAL)
             }
 
-            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD_ITALIC) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.DELETE)
-                newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.BOLD, Op.INSERT)
+            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD_ITALIC) -> {
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Op.DELETE)
+                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.BOLD, Op.INSERT)
                 updateTextString(editText, Typeface.BOLD)
             }
 
-            editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BOLD) -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.BOLD_ITALIC, Op.INSERT)
-                newTag = editorCore.updateTagStyle(newTag, EditorTextStyle.BOLD, Op.DELETE)
+            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD) -> {
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Op.INSERT)
+                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.BOLD, Op.DELETE)
                 updateTextString(editText, Typeface.BOLD_ITALIC)
             }
 
             else -> {
-                newTag = editorCore.updateTagStyle(tag, EditorTextStyle.ITALIC, Op.INSERT)
+                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.ITALIC, Op.INSERT)
                 updateTextString(editText, Typeface.ITALIC)
             }
         }
-        editText.tag = newTag
+        editText.tag = newMetadata
     }
 
     private fun updateTextString(editText: CustomEditText, typeFace: Int) =
@@ -407,7 +395,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         editText.selectionArea?.let { selection ->
             val text = SpannableStringBuilder(editText.text)
             text.setSpan(createSpan(), selection.first, selection.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
-            text.setSpan(ForegroundColorSpan(Color.RED), selection.first, selection.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
 
             // Put text
             editText.text = text

@@ -1,5 +1,6 @@
 package com.github.irshulx.components
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.graphics.Color
@@ -25,12 +26,12 @@ import com.github.irshulx.EditorCore
 import com.github.irshulx.R
 import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.EditorContent
-import com.github.irshulx.models.EditorControl
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.HtmlTag
 import com.github.irshulx.models.Node
 import com.github.irshulx.models.RenderType
 import com.github.irshulx.models.TextSettings
+import com.github.irshulx.models.control_metadata.ListItemMetadata
 
 import org.jsoup.nodes.Element
 
@@ -49,10 +50,10 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
             val row = table.getChildAt(j)
             val node1 = getNodeInstance(row)
             val li = row.findViewById<EditText>(R.id.txtText)
-            val liTag = li.tag as EditorControl
-            node1.contentStyles = liTag.editorTextStyles
+            val metadata = li.tag as ListItemMetadata
+            node1.contentStyles = metadata.editorTextStyles
             node1.content!!.add(Html.toHtml(li.text))
-            node1.textSettings = liTag.textSettings
+            node1.textSettings = metadata.textSettings
             node1.content!!.add(Html.toHtml(li.text))
             node.childs!!.add(node1)
         }
@@ -94,7 +95,7 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
 
         val table = createTable()
         editorCore.parentView!!.addView(table, Index)
-        table.tag = editorCore.createTag(if (isOrdered) EditorType.OL else EditorType.UL)
+        table.tag = ListItemMetadata(if (isOrdered) EditorType.OL else EditorType.UL)
         addListItem(table, isOrdered, text)
         return table
     }
@@ -121,10 +122,10 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
             editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, componentsWrapper!!.inputExtensions!!.normalTextSize.toFloat())
             editText.setTextColor(Color.parseColor(componentsWrapper!!.inputExtensions!!.defaultTextColor))
             if (this.lineSpacing != -1f) componentsWrapper!!.inputExtensions!!.setLineSpacing(editText, this.lineSpacing)
-            val tag = editorCore.createTag(if (isOrdered) EditorType.OL_LI else EditorType.UL_LI)
-            tag.textSettings = TextSettings(componentsWrapper!!.inputExtensions!!.defaultTextColor)
-            editText.tag = tag
-            childLayout.tag = tag
+            val metadata = ListItemMetadata(if (isOrdered) EditorType.OL_LI else EditorType.UL_LI)
+            metadata.textSettings = TextSettings(componentsWrapper!!.inputExtensions!!.defaultTextColor)
+            editText.tag = metadata
+            childLayout.tag = metadata
             editText.typeface = componentsWrapper!!.inputExtensions!!.getTypeface(Typeface.NORMAL)
             editorCore.activeView = editText
             componentsWrapper!!.inputExtensions!!.setText(editText, text)
@@ -230,33 +231,19 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
         }
     }
 
-    fun convertListToOrdered(_table: TableLayout) {
-        val type = editorCore.createTag(EditorType.OL)
-        _table.tag = type
-        for (i in 0 until _table.childCount) {
-            val _childRow = _table.getChildAt(i)
-            val editText = _childRow.findViewById<View>(R.id.txtText) as CustomEditText
-            editText.tag = editorCore.createTag(EditorType.OL_LI)
-            _childRow.tag = editorCore.createTag(EditorType.OL_LI)
-            val _bullet = _childRow.findViewById<View>(R.id.lblOrder) as TextView
-            _bullet.text = (i + 1).toString() + "."
+    @SuppressLint("SetTextI18n")
+    fun convertListToOrdered(table: TableLayout) {
+        val metadata = ListItemMetadata(EditorType.OL)
+        table.tag = metadata
+        for (i in 0 until table.childCount) {
+            val childRow = table.getChildAt(i)
+            val editText = childRow.findViewById<View>(R.id.txtText) as CustomEditText
+            editText.tag = ListItemMetadata(EditorType.OL_LI)
+            childRow.tag = ListItemMetadata(EditorType.OL_LI)
+            val bullet = childRow.findViewById<View>(R.id.lblOrder) as TextView
+            bullet.text = "${i+1}."
         }
     }
-
-
-    fun convertListToUnordered(_table: TableLayout) {
-        val type = editorCore.createTag(EditorType.UL)
-        _table.tag = type
-        for (i in 0 until _table.childCount) {
-            val _childRow = _table.getChildAt(i)
-            val _EditText = _childRow.findViewById<View>(R.id.txtText) as CustomEditText
-            _EditText.tag = editorCore.createTag(EditorType.UL_LI)
-            _childRow.tag = editorCore.createTag(EditorType.UL_LI)
-            val _bullet = _childRow.findViewById<View>(R.id.lblOrder) as TextView
-            _bullet.text = "•"
-        }
-    }
-
 
     fun getTextFromListItem(row: View): String {
         val _text = row.findViewById<View>(R.id.txtText) as CustomEditText
@@ -382,23 +369,31 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
 
     }
 
+    private fun convertListToUnordered(table: TableLayout) {
+        val metadata = ListItemMetadata(EditorType.UL)
+        table.tag = metadata
+        for (i in 0 until table.childCount) {
+            val childRow = table.getChildAt(i)
+            val editText = childRow.findViewById<View>(R.id.txtText) as CustomEditText
+            editText.tag = ListItemMetadata(EditorType.UL_LI)
+            childRow.tag = ListItemMetadata(EditorType.UL_LI)
+            val _bullet = childRow.findViewById<View>(R.id.lblOrder) as TextView
+            _bullet.text = "•"
+        }
+    }
 
+    @SuppressLint("SetTextI18n")
     private fun rearrangeColumns(_table: TableLayout) {
-        //TODO, make sure that if OL, all the items are ordered numerically
         for (i in 0 until _table.childCount) {
             val tableRow = _table.getChildAt(i) as TableRow
             val _bullet = tableRow.findViewById<View>(R.id.lblOrder) as TextView
-            _bullet.text = (i + 1).toString() + "."
+            _bullet.text = "${i+1}."
         }
     }
 
 
-    fun validateAndRemoveLisNode(view: View, contentType: EditorControl) {
-        /*
-         *
-         * If the person was on an active ul|li, move him to the previous node
-         *
-         */
+    fun validateAndRemoveLisNode(view: View, contentType: ListItemMetadata) {
+        // If the person was on an active ul|li, move him to the previous node
         val _row = view.parent as TableRow
         val _table = _row.parent as TableLayout
         val indexOnList = _table.indexOfChild(_row)
@@ -412,7 +407,7 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
             /**
              * Rearrange the nodes
              */
-            if (contentType.type === EditorType.OL_LI) {
+            if (contentType.type == EditorType.OL_LI) {
                 rearrangeColumns(_table)
             }
             if (text.requestFocus()) {
@@ -431,11 +426,10 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
         val count = tableLayout.childCount
         if (tableLayout.childCount > 0) {
             val tableRow = tableLayout.getChildAt(if (position == POSITION_START) 0 else count - 1) as TableRow
-            if (tableRow != null) {
-                val editText = tableRow.findViewById<View>(R.id.txtText) as EditText
-                if (editText.requestFocus()) {
-                    editText.setSelection(editText.text.length)
-                }
+
+            val editText = tableRow.findViewById<View>(R.id.txtText) as EditText
+            if (editText.requestFocus()) {
+                editText.setSelection(editText.text.length)
             }
         }
     }
@@ -502,7 +496,7 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
 
             if (item.childs!![i].contentStyles != null) {
                 for (style in item.childs!![i].contentStyles!!) {
-                    tv.tag = editorCore.createTag(EditorType.UL_LI)
+                    tv.tag = ListItemMetadata(EditorType.UL_LI)
                     componentsWrapper!!.inputExtensions!!.updateTextStyle(style, tv)
                 }
             }

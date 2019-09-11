@@ -26,6 +26,9 @@ import com.github.irshulx.EditorCore
 import com.github.irshulx.R
 import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.*
+import com.github.irshulx.models.control_metadata.ControlMetadata
+import com.github.irshulx.models.control_metadata.InputMetadata
+import com.github.irshulx.models.control_metadata.ImageMetadata
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,7 +45,8 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
 
     override fun getContent(view: View): Node {
         val node = getNodeInstance(view)
-        val imgTag = view.tag as EditorControl
+        val imgTag = view.tag as ImageMetadata
+
         if (!imgTag.path.isNullOrEmpty()) {
             node.content!!.add(imgTag.path!!)
 
@@ -52,9 +56,11 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             val textView = view.findViewById<EditText>(R.id.descriptionText)
 
             val subTitleNode = getNodeInstance(textView)
-            val descTag = textView.tag as EditorControl
+
+            val descTag = textView.tag as InputMetadata
             subTitleNode.contentStyles = descTag.editorTextStyles
             subTitleNode.textSettings = descTag.textSettings
+
             val desc = textView.text
             subTitleNode.content!!.add(Html.toHtml(desc))
             node.childs = ArrayList()
@@ -208,14 +214,14 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         return y[y.size - 1] + sdt
     }
 
-    fun createSubTitleTag(): EditorControl {
-        val subTag = editorCore.createTag(EditorType.IMG_SUB)
+    fun createSubTitleTag(): ControlMetadata {
+        val subTag = InputMetadata(EditorType.IMG_SUB)
         subTag.textSettings = TextSettings("#5E5E5E")
         return subTag
     }
 
-    fun createImageTag(path: String?): EditorControl {
-        val control = editorCore.createTag(EditorType.IMG)
+    fun createImageTag(path: String?): ControlMetadata {
+        val control = ImageMetadata(EditorType.IMG)
         control.path = path
         return control
     }
@@ -279,7 +285,6 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             }
         }
 
-
         if (placeholder == -1) {
             placeholder = R.drawable.image_placeholder
         }
@@ -308,25 +313,16 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
                 .into(imageView)
     }
 
-
-    fun findImageById(imageId: String): View? {
-        for (i in 0 until editorCore.parentChildCount) {
-            val view = editorCore.parentView!!.getChildAt(i)
-            val control = editorCore.getControlTag(view)
-            if (!TextUtils.isEmpty(control!!.path) && control.path == imageId)
-                return view
-        }
-        return null
-    }
-
     fun onPostUpload(url: String?, imageId: String) {
         val view = findImageById(imageId)
         val lblStatus = view!!.findViewById<View>(R.id.lblStatus) as TextView
         lblStatus.text = if (!TextUtils.isEmpty(url)) "Upload complete" else "Upload failed"
         if (!url.isNullOrEmpty()) {
-            val control = editorCore.createTag(EditorType.IMG)
+
+            val control = ImageMetadata(EditorType.IMG)
             control.path = url
             view.tag = control
+
             val timerTask = object : TimerTask() {
                 override fun run() {
                     (editorCore.context as Activity).runOnUiThread {
@@ -335,7 +331,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
                     }
                 }
             }
-            java.util.Timer().schedule(timerTask, 3000)
+            Timer().schedule(timerTask, 3000)
         }
         view.findViewById<View>(R.id.progress).visibility = View.GONE
     }
@@ -373,5 +369,19 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         imageView.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
             btn_remove.visibility = if (hasFocus) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun findImageById(imageId: String): View? {
+        for (i in 0 until editorCore.parentChildCount) {
+            val view = editorCore.parentView!!.getChildAt(i)
+
+            val control = editorCore.getControlMetadata(view)
+            if(control is ImageMetadata) {
+                if (!TextUtils.isEmpty(control.path) && control.path == imageId) {
+                    return view
+                }
+            }
+        }
+        return null
     }
 }

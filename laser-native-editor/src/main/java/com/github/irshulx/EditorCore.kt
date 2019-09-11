@@ -18,6 +18,9 @@ import com.github.irshulx.components.*
 import com.github.irshulx.Utilities.Utilities
 import com.github.irshulx.components.edit_text.CustomEditText
 import com.github.irshulx.models.*
+import com.github.irshulx.models.control_metadata.ControlMetadata
+import com.github.irshulx.models.control_metadata.InputMetadata
+import com.github.irshulx.models.control_metadata.ListItemMetadata
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
@@ -476,42 +479,26 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         return false
     }
 
-    fun updateTagStyle(controlTag: EditorControl, style: EditorTextStyle, _op: Op): EditorControl {
-        val styles = controlTag.editorTextStyles
+    fun updateMetadataStyle(metadata: InputMetadata, style: EditorTextStyle, _op: Op): InputMetadata {
+        val styles = metadata.editorTextStyles
         if (_op === Op.DELETE) {
-            val index = styles!!.indexOf(style)
+            val index = styles.indexOf(style)
             if (index != -1) {
                 styles.removeAt(index)
-                controlTag.editorTextStyles = styles
+                metadata.editorTextStyles = styles
             }
         } else {
-            val index = styles!!.indexOf(style)
+            val index = styles.indexOf(style)
             if (index == -1) {
                 styles.add(style)
             }
         }
-        return controlTag
+        return metadata
     }
 
-    fun getControlType(_view: View?): EditorType? {
-        if (_view == null)
-            return null
+    fun getControlType(view: View?): EditorType? = view?.let { (it.tag as ControlMetadata).type }
 
-        val _control = _view.tag as EditorControl
-        return _control.type
-    }
-
-    fun getControlTag(view: View): EditorControl = view.tag as EditorControl
-
-    fun createTag(type: EditorType): EditorControl {
-        val control = EditorControl()
-        control.type = type
-        control.editorTextStyles = mutableListOf()
-        when (type) {
-
-        }
-        return control
-    }
+    fun getControlMetadata(view: View): ControlMetadata = view.tag as ControlMetadata
 
     private fun deleteFocusedPrevious(view: EditText) {
         val index = this.editorSettings.parentView!!.indexOfChild(view)
@@ -520,16 +507,15 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         }
 
         // If the person was on an active ul|li, move him to the previous node
-        ((view.parent as View).tag as? EditorControl)
-            ?.let { contentType ->
-                if (contentType.type === EditorType.OL_LI || contentType.type === EditorType.UL_LI) {
-                    listItemExtensions!!.validateAndRemoveLisNode(view, contentType)
-                    return@deleteFocusedPrevious
-                }
+        ((view.parent as View).tag as? ControlMetadata)?.let { contentType ->
+            if (contentType.type === EditorType.OL_LI || contentType.type === EditorType.UL_LI) {
+                listItemExtensions!!.validateAndRemoveLisNode(view, contentType as ListItemMetadata)
+                return@deleteFocusedPrevious
             }
+        }
 
         val toFocus = this.editorSettings.parentView!!.getChildAt(index - 1)
-        val control = toFocus.tag as EditorControl
+        val control = toFocus.tag as ControlMetadata
 
          // If its an image or map, do not delete edittext, as there is nothing to focus on after image
          // If the person was on edittext,  had removed the whole text, we need to move into the previous line
@@ -648,7 +634,7 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
     }
 
     private fun checkLastControl(): Boolean {
-        val control = getControlTag(parentView!!.getChildAt(0)) ?: return false
+        val control = getControlMetadata(parentView!!.getChildAt(0)) ?: return false
         when (control.type) {
             EditorType.UL, EditorType.OL -> this.editorSettings.parentView!!.removeAllViews()
         }

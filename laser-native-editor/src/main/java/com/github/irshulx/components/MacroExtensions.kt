@@ -15,10 +15,10 @@ import com.github.irshulx.EditorComponent
 import com.github.irshulx.R
 import com.github.irshulx.Utilities.Utilities
 import com.github.irshulx.models.EditorContent
-import com.github.irshulx.models.EditorControl
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.Node
 import com.github.irshulx.models.RenderType
+import com.github.irshulx.models.control_metadata.MacroMetadata
 
 import org.jsoup.nodes.Element
 
@@ -43,13 +43,13 @@ class MacroExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         frameLayout.addView(overlay)
         imageView.setOnClickListener { editorCore.parentView!!.removeView(frameLayout) }
 
-        val control = editorCore.createTag(EditorType.MACRO)
-        control.macroSettings = settings
-        control.macroName = name
+        val metadata = MacroMetadata(EditorType.MACRO)
+        metadata.macroSettings = settings
+        metadata.macroName = name
         if (index == -1) {
             index = editorCore.determineIndex(EditorType.MACRO)
         }
-        frameLayout.tag = control
+        frameLayout.tag = metadata
 
         editorCore.parentView!!.addView(frameLayout, index)
 
@@ -85,11 +85,11 @@ class MacroExtensions(private val editorCore: EditorCore) : EditorComponent(edit
 
     override fun getContent(view: View): Node {
         val node = this.getNodeInstance(view)
-        val macroTag = view.tag as EditorControl
+        val metadata = view.tag as MacroMetadata
 
-        macroTag.macroName?.let {node.content!!.add(it)}
+        metadata.macroName?.let {node.content!!.add(it)}
 
-        node.macroSettings = macroTag.macroSettings
+        node.macroSettings = metadata.macroSettings
         return node
     }
 
