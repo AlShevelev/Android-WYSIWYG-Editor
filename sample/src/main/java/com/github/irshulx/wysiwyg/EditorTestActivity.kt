@@ -66,12 +66,6 @@ class EditorTestActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.action_Italic).setOnClickListener { editor.updateTextStyle(EditorTextStyle.ITALIC) }
 
-        findViewById<View>(R.id.action_indent).setOnClickListener { editor.updateTextStyle(EditorTextStyle.INDENT) }
-
-        findViewById<View>(R.id.action_blockquote).setOnClickListener { editor.updateTextStyle(EditorTextStyle.BLOCKQUOTE) }
-
-        findViewById<View>(R.id.action_outdent).setOnClickListener { editor.updateTextStyle(EditorTextStyle.OUTDENT) }
-
         findViewById<View>(R.id.action_bulleted).setOnClickListener { editor.insertList(false) }
 
         findViewById<View>(R.id.action_unordered_numbered).setOnClickListener { editor.insertList(true) }

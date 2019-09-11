@@ -109,14 +109,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                 applyStyles(tv, element)
             }
 
-            HtmlTag.blockquote -> {
-                text = element.html()
-                count = editorCore.parentView!!.childCount
-                tv = insertEditText(count, null, text)
-                updateTextStyle(EditorTextStyle.BLOCKQUOTE, tv)
-                applyStyles(tv, element)
-            }
-
             else -> {}
         }
         return null
@@ -415,11 +407,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         try {
             val editTextLocal = editText ?: editorCore.activeView as EditText
             
-            var tag = editorCore.getControlTag(editTextLocal)
-
-            val pBottom = editTextLocal.paddingBottom
-            val pRight = editTextLocal.paddingRight
-            val pTop = editTextLocal.paddingTop
+            val tag = editorCore.getControlTag(editTextLocal)
 
             if (isEditorTextStyleContentStyles(style)) {
                 if (style === EditorTextStyle.BOLD) {
@@ -428,38 +416,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                     italicizeText(tag, editTextLocal)
                 }
                 return
-            }
-            if (style === EditorTextStyle.INDENT) {
-                if (editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.INDENT)) {
-                    tag = editorCore.updateTagStyle(tag, EditorTextStyle.INDENT, Op.DELETE)
-                    editTextLocal.setPadding(0, pTop, pRight, pBottom)
-                    editTextLocal.tag = tag
-                } else {
-                    tag = editorCore.updateTagStyle(tag, EditorTextStyle.INDENT, Op.INSERT)
-                    editTextLocal.setPadding(30, pTop, pRight, pBottom)
-                    editTextLocal.tag = tag
-                }
-            } else if (style === EditorTextStyle.OUTDENT) {
-                if (editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.INDENT)) {
-                    tag = editorCore.updateTagStyle(tag, EditorTextStyle.INDENT, Op.DELETE)
-                    editTextLocal.setPadding(0, pTop, pRight, pBottom)
-                    editTextLocal.tag = tag
-                }
-            } else if (style === EditorTextStyle.BLOCKQUOTE) {
-                val params = editTextLocal.layoutParams as LinearLayout.LayoutParams
-                if (editorCore.containsStyle(tag.editorTextStyles!!, EditorTextStyle.BLOCKQUOTE)) {
-                    tag = editorCore.updateTagStyle(tag, EditorTextStyle.BLOCKQUOTE, Op.DELETE)
-                    editTextLocal.setPadding(0, pTop, pRight, pBottom)
-                    editTextLocal.setBackgroundDrawable(ContextCompat.getDrawable(this.editorCore.context, R.drawable.invisible_edit_text))
-                    params.setMargins(0, 0, 0, editorCore.context.resources.getDimension(R.dimen.edittext_margin_bottom).toInt())
-                } else {
-                    val marginExtra = editorCore.context.resources.getDimension(R.dimen.edittext_margin_bottom) * 1.5f
-                    tag = editorCore.updateTagStyle(tag, EditorTextStyle.BLOCKQUOTE, Op.INSERT)
-                    editTextLocal.setPadding(30, pTop, 30, pBottom)
-                    editTextLocal.setBackgroundDrawable(editTextLocal.context.resources.getDrawable(R.drawable.block_quote_background))
-                    params.setMargins(0, marginExtra.toInt(), 0, marginExtra.toInt())
-                }
-                editTextLocal.tag = tag
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -657,12 +613,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                     EditorTextStyle.BOLD -> tmpl = tmpl.replace("{{\$content}}", "<b>{{\$content}}</b>")
                     EditorTextStyle.BOLDITALIC -> tmpl = tmpl.replace("{{\$content}}", "<b><i>{{\$content}}</i></b>")
                     EditorTextStyle.ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<i>{{\$content}}</i>")
-                    EditorTextStyle.INDENT -> styles[style] = "margin-left:25px"
-                    EditorTextStyle.OUTDENT -> styles[style] = "margin-left:0"
-                    EditorTextStyle.BLOCKQUOTE -> {
-                        tmpl = tmpl.replace("{{\$tag}}", "blockquote")
-                        isParagraph = false
-                    }
                     EditorTextStyle.NORMAL -> {
                         tmpl = tmpl.replace("{{\$tag}}", "p")
                         isParagraph = true

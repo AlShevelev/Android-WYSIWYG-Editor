@@ -27,34 +27,6 @@
         android:src="@drawable/icon_italic" />
 
     <ImageButton
-        android:id="@+id/action_indent"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@android:color/transparent"
-        android:maxHeight="20dp"
-        android:maxWidth="20dp"
-        android:src="@drawable/icon_indent" />
-
-    <ImageButton
-        android:id="@+id/action_outdent"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@android:color/transparent"
-        android:maxHeight="20dp"
-        android:maxWidth="20dp"
-        android:src="@drawable/icon_outdent" />
-
-    <ImageButton
-        android:id="@+id/action_blockquote"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@android:color/transparent"
-        android:maxHeight="20dp"
-        android:maxWidth="20dp"
-        android:src="@drawable/ic_blockquote" />
-
-
-    <ImageButton
         android:id="@+id/action_color"
         android:layout_width="40dp"
         android:layout_height="40dp"
