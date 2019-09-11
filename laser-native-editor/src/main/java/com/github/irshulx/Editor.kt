@@ -213,10 +213,6 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
          *
          */
 
-    fun setEditorImageLayout(layout: Int) {
-        this.imageExtensions!!.setEditorImageLayout(layout)
-    }
-
     fun openImagePicker() {
         imageExtensions!!.openImageGallery()
     }

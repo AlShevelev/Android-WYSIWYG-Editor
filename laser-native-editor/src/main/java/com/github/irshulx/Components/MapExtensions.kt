@@ -1,7 +1,6 @@
 package com.github.irshulx.Components
 
 import android.app.Activity
-import android.text.Editable
 import android.view.View
 import android.widget.ImageView
 
@@ -20,12 +19,12 @@ import org.jsoup.nodes.Element
  * Created by mkallingal on 5/1/2016.
  */
 class MapExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
-    private var mapExtensionTemplate = R.layout.tmpl_image_view
+    private var mapExtensionTemplate = R.layout.image_view
 
     override fun getContent(view: View): Node {
         val node = getNodeInstance(view)
         val mapTag = view.tag as EditorControl
-        val desc = (view.findViewById<View>(R.id.desc) as CustomEditText).text
+        val desc = (view.findViewById<View>(R.id.descriptionText) as CustomEditText).text
 
         mapTag.cords?.let { node.content!!.add(it) }
         node.content!!.add(if (!desc.isNullOrEmpty()) desc.toString() else "")
@@ -77,7 +76,7 @@ class MapExtensions(internal var editorCore: EditorCore) : EditorComponent(edito
         /**
          * description, if render mode, set the description and disable it
          */
-        val editText = childLayout.findViewById<CustomEditText>(R.id.desc)
+        val editText = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
         if (editorCore.renderType === RenderType.RENDERER) {
             editText.setText(desc)
             editText.isEnabled = false

@@ -514,43 +514,28 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         return control
     }
 
-    fun deleteFocusedPrevious(view: EditText) {
+    private fun deleteFocusedPrevious(view: EditText) {
         val index = this.editorSettings.parentView!!.indexOfChild(view)
-        if (index == 0)
-            return
-        val contentType = (view.parent as View).tag as EditorControl
-        /*
-         *
-         * If the person was on an active ul|li, move him to the previous node
-         *
-         */
-
-
-        if (contentType != null && (contentType.type === EditorType.OL_LI || contentType.type === EditorType.UL_LI)) {
-            listItemExtensions!!.validateAndRemoveLisNode(view, contentType)
+        if (index == 0) {
             return
         }
+
+        // If the person was on an active ul|li, move him to the previous node
+        ((view.parent as View).tag as? EditorControl)
+            ?.let { contentType ->
+                if (contentType.type === EditorType.OL_LI || contentType.type === EditorType.UL_LI) {
+                    listItemExtensions!!.validateAndRemoveLisNode(view, contentType)
+                    return@deleteFocusedPrevious
+                }
+            }
 
         val toFocus = this.editorSettings.parentView!!.getChildAt(index - 1)
         val control = toFocus.tag as EditorControl
 
-        /**
-         * If its an image or map, do not delete edittext, as there is nothing to focus on after image
-         */
-
-        /*
-         *
-         * If the person was on edittext,  had removed the whole text, we need to move into the previous line
-         *
-         */
-
+         // If its an image or map, do not delete edittext, as there is nothing to focus on after image
+         // If the person was on edittext,  had removed the whole text, we need to move into the previous line
         if (control.type === EditorType.OL || control.type === EditorType.UL) {
-            /*
-         *
-         * previous node on the editor is a list, set focus to its inside
-         *
-         */
-            this.editorSettings.parentView!!.removeView(view)
+            this.editorSettings.parentView!!.removeView(view)   // previous node on the editor is a list, set focus to its inside
             listItemExtensions!!.setFocusToList(toFocus, ListItemExtensions.POSITION_END)
         } else {
             removeParent(view)
@@ -562,6 +547,7 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         val indexOfDeleteItem = this.editorSettings.parentView!!.indexOfChild(view)
         var nextItem: View? = null
         var nextFocusIndex = -1
+
         //remove hr if its on top of the delete field
         this.editorSettings.parentView!!.removeView(view)
         Log.d("indexOfDeleteItem", "indexOfDeleteItem : $indexOfDeleteItem")

@@ -16,7 +16,7 @@
         android:src="@color/lightBackground" />
 
     <com.github.irshulx.Components.CustomEditText
-        android:id="@+id/desc"
+        android:id="@+id/descriptionText"
         style="@style/WysiwygEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,6 +28,9 @@
         android:paddingLeft="20dp"
         android:paddingRight="20dp"
         android:textColor="@color/darktext"
+
+        android:maxLength="60"
+        android:maxLines="2"
 
         android:focusable="true"
         android:focusableInTouchMode="true"

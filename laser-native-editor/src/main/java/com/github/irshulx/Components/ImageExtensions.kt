@@ -30,10 +30,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(editorCore) {
-    private var editorImageLayout = R.layout.tmpl_image_view
-    var requestListener: RequestListener<Drawable>? = null
-    var requestOptions: RequestOptions? = null
-    var transition: DrawableTransitionOptions? = null
+    private var requestListener: RequestListener<Drawable>? = null
+    private var requestOptions: RequestOptions? = null
+    private var transition: DrawableTransitionOptions? = null
 
     @DrawableRes
     var placeholder = -1
@@ -49,7 +48,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             /**
              * for subtitle
              */
-            val textView = view.findViewById<EditText>(R.id.desc)
+            val textView = view.findViewById<EditText>(R.id.descriptionText)
 
             val subTitleNode = getNodeInstance(textView)
             val descTag = textView.tag as EditorControl
@@ -77,7 +76,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             loadImage(path, node.childs!![0])
         } else {
             val layout = insertImage(null, path, editorCore.childCount, node.childs!![0].content!![0], false)
-            componentsWrapper!!.inputExtensions!!.applyTextSettings(node.childs!![0], layout.findViewById<View>(R.id.desc) as TextView)
+            componentsWrapper!!.inputExtensions!!.applyTextSettings(node.childs!![0], layout.findViewById<View>(R.id.descriptionText) as TextView)
         }
     }
 
@@ -107,10 +106,6 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         this.componentsWrapper = componentsWrapper
     }
 
-    fun setEditorImageLayout(drawable: Int) {
-        this.editorImageLayout = drawable
-    }
-
     fun openImageGallery() {
         val intent = Intent()
         intent.type = "image/*"
@@ -124,11 +119,11 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         if (!TextUtils.isEmpty(url)) hasUploaded = true
 
         // Render(getStateFromString());
-        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(this.editorImageLayout, null)
+        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(R.layout.image_view, null)
         val imageView = childLayout.findViewById<ImageView>(R.id.imageView)
         val lblStatus = childLayout.findViewById<TextView>(R.id.lblStatus)
 
-        val desc = childLayout.findViewById<CustomEditText>(R.id.desc)
+        val desc = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
 
         if (!url.isNullOrEmpty()) {
             loadImageUsingLib(url, imageView)
@@ -230,7 +225,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
     fun loadImage(_path: String, node: Node) {
         val desc = node.content!![0]
         val childLayout = loadImageRemote(_path, desc)
-        val text = childLayout.findViewById<CustomEditText>(R.id.desc)
+        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
         if (!TextUtils.isEmpty(desc)) {
             componentsWrapper!!.inputExtensions!!.applyTextSettings(node, text)
         }
@@ -242,16 +237,16 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             desc = node.html()
         }
         val childLayout = loadImageRemote(_path, desc)
-        val text = childLayout.findViewById<CustomEditText>(R.id.desc)
+        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
         if (node != null) {
             componentsWrapper!!.inputExtensions!!.applyStyles(text, node)
         }
     }
 
     fun loadImageRemote(path: String, desc: String?): View {
-        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(this.editorImageLayout, null)
+        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(R.layout.image_view, null)
         val imageView = childLayout.findViewById<ImageView>(R.id.imageView)
-        val text = childLayout.findViewById<CustomEditText>(R.id.desc)
+        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
 
         childLayout.tag = createImageTag(path)
         text.tag = createSubTitleTag()

@@ -183,7 +183,11 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         editorTag.textSettings = TextSettings(this.defaultTextColor)
         editText.tag = editorTag
         editText.setBackgroundDrawable(ContextCompat.getDrawable(this.editorCore.context, R.drawable.invisible_edit_text))
-        editText.setOnKeyListener { v, keyCode, event -> editorCore.onKey(v, keyCode, event, editText) }
+
+        editText.setOnKeyListener { v, keyCode, event ->
+            editorCore.onKey(v, keyCode, event, editText)
+        }
+
         editText.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
             if (!hasFocus) {
                 editText.clearFocus()
