@@ -500,9 +500,7 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         return _control.type
     }
 
-    fun getControlTag(view: View?): EditorControl? {
-        return if (view == null) null else view.tag as EditorControl
-    }
+    fun getControlTag(view: View): EditorControl = view.tag as EditorControl
 
     fun createTag(type: EditorType): EditorControl {
         val control = EditorControl()

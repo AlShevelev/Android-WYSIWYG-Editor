@@ -35,8 +35,6 @@ import org.jsoup.nodes.Element
 
 import java.util.ArrayList
 
-import com.github.irshulx.Components.InputExtensions.Companion.CONTENT
-
 class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
     private var listItemTemplate = R.layout.tmpl_list_item
     private var lineSpacing = -1f
@@ -126,7 +124,7 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
             tag.textSettings = TextSettings(componentsWrapper!!.inputExtensions!!.defaultTextColor)
             editText.tag = tag
             childLayout.tag = tag
-            editText.typeface = componentsWrapper!!.inputExtensions!!.getTypeface(CONTENT, Typeface.NORMAL)
+            editText.typeface = componentsWrapper!!.inputExtensions!!.getTypeface(Typeface.NORMAL)
             editorCore.activeView = editText
             componentsWrapper!!.inputExtensions!!.setText(editText, text)
             editText.setOnClickListener { v ->
@@ -193,7 +191,7 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
             }, 0)
         } else {
             val textView = childLayout.findViewById<TextView>(R.id.lblText)
-            textView.typeface = componentsWrapper!!.inputExtensions!!.getTypeface(CONTENT, Typeface.NORMAL)
+            textView.typeface = componentsWrapper!!.inputExtensions!!.getTypeface(Typeface.NORMAL)
 
             /*
             It's a renderer, so instead of EditText,render TextView
@@ -504,7 +502,7 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
             if (item.childs!![i].contentStyles != null) {
                 for (style in item.childs!![i].contentStyles!!) {
                     tv.tag = editorCore.createTag(EditorType.UL_LI)
-                    componentsWrapper!!.inputExtensions!!.UpdateTextStyle(style, tv)
+                    componentsWrapper!!.inputExtensions!!.updateTextStyle(style, tv)
                 }
             }
             if (!TextUtils.isEmpty(item.childs!![i].textSettings!!.textColor)) {

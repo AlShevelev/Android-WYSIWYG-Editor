@@ -62,12 +62,6 @@ class EditorTestActivity : AppCompatActivity() {
     }
 
     private fun setUpEditor() {
-        findViewById<View>(R.id.action_h1).setOnClickListener { editor.updateTextStyle(EditorTextStyle.H1) }
-
-        findViewById<View>(R.id.action_h2).setOnClickListener { editor.updateTextStyle(EditorTextStyle.H2) }
-
-        findViewById<View>(R.id.action_h3).setOnClickListener { editor.updateTextStyle(EditorTextStyle.H3) }
-
         findViewById<View>(R.id.action_bold).setOnClickListener { editor.updateTextStyle(EditorTextStyle.BOLD) }
 
         findViewById<View>(R.id.action_Italic).setOnClickListener { editor.updateTextStyle(EditorTextStyle.ITALIC) }

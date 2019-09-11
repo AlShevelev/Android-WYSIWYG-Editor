@@ -173,7 +173,7 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
 
 
     fun updateTextStyle(style: EditorTextStyle) {
-        inputExtensions!!.UpdateTextStyle(style, null)
+        inputExtensions!!.updateTextStyle(style, null)
     }
 
     fun updateTextColor(color: String) {
