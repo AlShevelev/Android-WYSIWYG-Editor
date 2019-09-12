@@ -29,6 +29,7 @@ import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.ControlMetadata
 import com.github.irshulx.models.control_metadata.ImageDescriptionMetadata
 import com.github.irshulx.models.control_metadata.ImageMetadata
+import com.github.irshulx.models.Node
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.*
@@ -58,7 +59,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             val subTitleNode = getNodeInstance(textView)
 
             val descTag = textView.tag as ImageDescriptionMetadata
-            subTitleNode.contentStyles = descTag.editorTextStyles
+            subTitleNode.editorTextStyles = descTag.editorTextStyles
             subTitleNode.textSettings = descTag.textSettings
 
             val desc = textView.text

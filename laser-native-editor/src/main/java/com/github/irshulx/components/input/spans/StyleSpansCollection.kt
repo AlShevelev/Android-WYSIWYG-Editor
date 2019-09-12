@@ -5,9 +5,12 @@ import com.github.irshulx.utilities.IdUtil
 import java.lang.UnsupportedOperationException
 
 class StyleSpansCollection : SpansCollection<EditorTextStyle>() {
-    fun addBold(range: IntRange) = add(create(range, EditorTextStyle.BOLD))
-
-    fun addItalic(range: IntRange) = add(create(range, EditorTextStyle.ITALIC))
+    fun add(area: IntRange, style: EditorTextStyle) =
+        if(style == EditorTextStyle.BOLD || style == EditorTextStyle.ITALIC) {
+            add(create(area, style))
+        } else {
+            throw UnsupportedOperationException("This style is not supported: $style")
+        }
 
     override fun calculateSpanValue(oldValue: EditorTextStyle, newValue: EditorTextStyle): EditorTextStyle? {
         return when (newValue) {
@@ -31,8 +34,8 @@ class StyleSpansCollection : SpansCollection<EditorTextStyle>() {
         }
     }
 
-    override fun Span<EditorTextStyle>.copy(newValue: EditorTextStyle): Span<EditorTextStyle> = StyleSpan(id, range, newValue)
+    override fun Span<EditorTextStyle>.copy(newValue: EditorTextStyle): Span<EditorTextStyle> = StyleSpan(id, area, newValue)
 
-    override fun create(range: IntRange, newValue: EditorTextStyle): Span<EditorTextStyle> =
-        StyleSpan(IdUtil.generateLongId(), range, newValue)
+    override fun create(area: IntRange, newValue: EditorTextStyle): Span<EditorTextStyle> =
+        StyleSpan(IdUtil.generateLongId(), area, newValue)
 }

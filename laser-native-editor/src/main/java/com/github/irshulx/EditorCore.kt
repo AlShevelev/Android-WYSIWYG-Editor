@@ -22,6 +22,7 @@ import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.ControlMetadata
 import com.github.irshulx.models.control_metadata.InputMetadata
 import com.github.irshulx.models.control_metadata.ListItemMetadata
+import com.github.irshulx.models.Node
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
@@ -478,23 +479,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
             continue
         }
         return false
-    }
-
-    fun updateMetadataStyle(metadata: InputMetadata, style: EditorTextStyle, _operation: Operation): InputMetadata {
-        val styles = metadata.editorTextStyles
-        if (_operation === Operation.DELETE) {
-            val index = styles.indexOf(style)
-            if (index != -1) {
-                styles.removeAt(index)
-                metadata.editorTextStyles = styles
-            }
-        } else {
-            val index = styles.indexOf(style)
-            if (index == -1) {
-                styles.add(style)
-            }
-        }
-        return metadata
     }
 
     fun getControlType(view: View?): EditorType? = view?.let { (it.tag as ControlMetadata).type }

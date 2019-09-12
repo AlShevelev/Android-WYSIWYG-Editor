@@ -51,7 +51,7 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
             val node1 = getNodeInstance(row)
             val li = row.findViewById<EditText>(R.id.txtText)
             val metadata = li.tag as ListItemMetadata
-            node1.contentStyles = metadata.editorTextStyles
+            node1.editorTextStyles = metadata.editorTextStyles
             node1.content!!.add(Html.toHtml(li.text))
             node1.textSettings = metadata.textSettings
             node1.content!!.add(Html.toHtml(li.text))
@@ -493,16 +493,16 @@ class ListItemExtensions(internal var editorCore: EditorCore) : EditorComponent(
                 tv = listItemView!!.findViewById(R.id.txtText)
             }
 
-
-            if (item.childs!![i].contentStyles != null) {
-                for (style in item.childs!![i].contentStyles!!) {
-                    tv.tag = ListItemMetadata(EditorType.UL_LI)
-                    componentsWrapper!!.inputExtensions!!.updateTextStyle(style, tv)
-                }
-            }
-            if (!TextUtils.isEmpty(item.childs!![i].textSettings!!.textColor)) {
-                tv.setTextColor(Color.parseColor(item.childs!![i].textSettings!!.textColor))
-            }
+            // todo[AS] temorary disabled
+//            if (item.childs!![i].styleSpans != null) {
+//                for (style in item.childs!![i].styleSpans!!) {
+//                    tv.tag = ListItemMetadata(EditorType.UL_LI)
+//                    componentsWrapper!!.inputExtensions!!.updateTextStyle(style, tv)
+//                }
+//            }
+//            if (!TextUtils.isEmpty(item.childs!![i].colorSpans!!.textColor)) {
+//                tv.setTextColor(Color.parseColor(item.childs!![i].colorSpans!!.textColor))
+//            }
         }
     }
 

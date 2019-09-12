@@ -4,7 +4,7 @@ abstract class SpansCollection<T> {
     private val spans = mutableListOf<Span<T>>()
 
     protected fun add(span: Span<T>): List<SpanOperation> {
-        if(span.range.first >= span.range.last) {
+        if(span.area.first >= span.area.last) {
             return listOf()
         }
 
@@ -26,29 +26,29 @@ abstract class SpansCollection<T> {
      */
     protected abstract fun Span<T>.copy(newValue: T): Span<T>
 
-    protected abstract fun create(range: IntRange, newValue: T): Span<T>
+    protected abstract fun create(area: IntRange, newValue: T): Span<T>
 
     private fun calculateIntersections(span: Span<T>): SpansIntersections<T> {
         val intersections = SpansIntersections<T>()
 
         spans.forEach {
             when {
-                it.range.first == span.range.first && it.range.last == span.range.last ->
+                it.area.first == span.area.first && it.area.last == span.area.last ->
                     intersections.spansIntersectFull.add(it)
 
-                it.range.first >= span.range.first && it.range.last <= span.range.last ->
+                it.area.first >= span.area.first && it.area.last <= span.area.last ->
                     intersections.spansInsideFull.add(it)
 
-                it.range.first >= span.range.first && it.range.last <= span.range.last ->
+                it.area.first >= span.area.first && it.area.last <= span.area.last ->
                     intersections.spansInsideFull.add(it)
 
-                it.range.first < span.range.first && it.range.last >= span.range.first ->
+                it.area.first < span.area.first && it.area.last >= span.area.first ->
                     intersections.spansInsideLeft.add(it)
 
-                it.range.last > span.range.last && it.range.first <= span.range.last ->
+                it.area.last > span.area.last && it.area.first <= span.area.last ->
                     intersections.spansInsideRight.add(it)
 
-                it.range.first < span.range.first && it.range.last > span.range.last ->
+                it.area.first < span.area.first && it.area.last > span.area.last ->
                     intersections.spansOutsideFull.add(it)
             }
         }
@@ -69,10 +69,6 @@ abstract class SpansCollection<T> {
         // Has full intersection
         val fullIntersection = intersections.spansIntersectFull.firstOrNull()
         if(fullIntersection != null) {
-            if(fullIntersection.value == span.value) {
-                return result
-            }
-
             val newSpanValue = calculateSpanValue(fullIntersection.value, span.value)
             if(fullIntersection.value == newSpanValue) {
                 return result
@@ -94,10 +90,6 @@ abstract class SpansCollection<T> {
         // Has old full-outside span
         val oldFullOutside = intersections.spansOutsideFull.firstOrNull()
         if(oldFullOutside != null) {
-            if(oldFullOutside.value == span.value) {
-                return result
-            }
-
             val newSpanValue = calculateSpanValue(oldFullOutside.value, span.value)
             if(oldFullOutside.value == newSpanValue) {
                 return result
@@ -106,11 +98,11 @@ abstract class SpansCollection<T> {
             spans.remove(oldFullOutside)
             result.add(DeleteSpanOperation(oldFullOutside.id))
 
-            val newLeftSpan = create(oldFullOutside.range.first..span.range.first, oldFullOutside.value)
+            val newLeftSpan = create(oldFullOutside.area.first..span.area.first, oldFullOutside.value)
             spans.add(newLeftSpan)
             result.add(CreateSpanOperation(newLeftSpan))
 
-            val newRightSpan = create(span.range.last..oldFullOutside.range.last, oldFullOutside.value)
+            val newRightSpan = create(span.area.last..oldFullOutside.area.last, oldFullOutside.value)
             spans.add(newRightSpan)
             result.add(CreateSpanOperation(newRightSpan))
 
@@ -127,12 +119,12 @@ abstract class SpansCollection<T> {
         // Remove full inside spans
         intersections.spansInsideFull.forEach { insideSpan ->
             spans.remove(insideSpan)
-            result.add(CreateSpanOperation(insideSpan))
+            result.add(DeleteSpanOperation(insideSpan.id))
         }
 
         // Process left-intersected spans
         intersections.spansInsideLeft.forEach { oldLeftSpan ->
-            create(oldLeftSpan.range.first..span.range.first, oldLeftSpan.value).let { newLeftSpan ->
+            create(oldLeftSpan.area.first..span.area.first, oldLeftSpan.value).let { newLeftSpan ->
                 spans.remove(oldLeftSpan)
                 result.add(DeleteSpanOperation(oldLeftSpan.id))
 
@@ -144,7 +136,7 @@ abstract class SpansCollection<T> {
 
         // Process right-intersected spans
         intersections.spansInsideRight.forEach { oldRightSpan ->
-            create(span.range.last..oldRightSpan.range.last, oldRightSpan.value).let { newRightSpan ->
+            create(span.area.last..oldRightSpan.area.last, oldRightSpan.value).let { newRightSpan ->
                 spans.remove(oldRightSpan)
                 result.add(DeleteSpanOperation(oldRightSpan.id))
 

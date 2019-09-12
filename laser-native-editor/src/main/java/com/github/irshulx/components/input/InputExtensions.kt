@@ -34,6 +34,8 @@ import com.github.irshulx.components.ListItemExtensions
 import com.github.irshulx.utilities.FontCache
 import com.github.irshulx.utilities.Utilities
 import com.github.irshulx.components.input.edit_text.CustomEditText
+import com.github.irshulx.components.input.spans.CreateSpanOperation
+import com.github.irshulx.components.input.spans.DeleteSpanOperation
 import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.EditorTextStyle
 import com.github.irshulx.models.EditorType
@@ -52,7 +54,7 @@ import java.util.regex.Pattern
 
 import com.github.irshulx.models.TextSetting.TEXT_COLOR
 import com.github.irshulx.models.control_metadata.InputMetadata
-import com.github.irshulx.utilities.IdUtil
+import java.lang.UnsupportedOperationException
 
 class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
     var defaultTextColor = "#000000"
@@ -81,9 +83,9 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     override fun getContent(view: View): Node {
         val node = this.getNodeInstance(view)
         val tag = view.getTag() as InputMetadata
-        node.contentStyles = tag.editorTextStyles
+        node.styleSpans = tag.styleSpans
         node.content!!.add(Html.toHtml((view as EditText).text))
-        node.textSettings = tag.textSettings
+        node.colorSpans = tag.colorSpans
         return node
     }
 
@@ -129,24 +131,32 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         textView.text = toReplace
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun updateTextColor(color: String, editText: TextView?) {
         try {
-            val translatedColor = translateColor(color)
-
             val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
 
-            val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
-            if (metadata.textSettings == null) {
-                metadata.textSettings = TextSettings(translatedColor)
-            }
-            else {
-                metadata.textSettings!!.textColor = translatedColor
-            }
+            // Process the operation only if a selection area exists
+            editTextLocal.selectionArea?.let { selection ->
+                val translatedColor = translateColor(color)
+                val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
 
-            editTextLocal.tag = metadata
+                val spanOperations = metadata.colorSpans.add(selection, Color.parseColor(translatedColor))
 
-            setSpanToSelection(editTextLocal) {
-                ForegroundColorSpan(Color.parseColor(translatedColor))
+                spanOperations.forEach { operation ->
+                    when(operation) {
+                        is DeleteSpanOperation -> removeSpan(editTextLocal, operation.spanId)
+
+                        is CreateSpanOperation<*> -> {
+                            with((operation as CreateSpanOperation<Int>).span) {
+                                setSpan(editTextLocal, id, this.area) {
+                                    ForegroundColorSpan(value)
+                                }
+                            }
+                        }
+                    }
+                }
+                editTextLocal.restoreFloatingMenu(selection)
             }
         } catch (ex: Exception) {
             ex.printStackTrace()
@@ -172,9 +182,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         /**
          * create tag for the editor
          */
-
         val metadata = InputMetadata(EditorType.INPUT)
-        metadata.textSettings = TextSettings(this.defaultTextColor)
         editText.tag = metadata
 
         editText.setBackgroundDrawable(ContextCompat.getDrawable(this.editorCore.context, R.drawable.invisible_edit_text))
@@ -309,109 +317,61 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         }
     }
 
-    private fun isEditorTextStyleContentStyles(editorTextStyle: EditorTextStyle): Boolean {
-        return editorTextStyle === EditorTextStyle.BOLD || editorTextStyle === EditorTextStyle.BOLD_ITALIC || editorTextStyle === EditorTextStyle.ITALIC
-    }
-
+    @Suppress("UNCHECKED_CAST")
     fun updateTextStyle(style: EditorTextStyle, editText: TextView?) {
         try {
             val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
 
             // Process the operation only if a selection area exists
-            editTextLocal.selectionArea
-                ?.let {
-                    val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
+            editTextLocal.selectionArea?.let { selection ->
+                val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
+                val spanOperations = metadata.styleSpans.add(selection, style)
 
-                    if (isEditorTextStyleContentStyles(style)) {
-                        if (style === EditorTextStyle.BOLD) {
-                            boldifyText(metadata, editTextLocal)
-                        } else if (style === EditorTextStyle.ITALIC) {
-                            italicizeText(metadata, editTextLocal)
+                spanOperations.forEach { operation ->
+                    when(operation) {
+                        is DeleteSpanOperation -> removeSpan(editTextLocal, operation.spanId)
+
+                        is CreateSpanOperation<*> -> {
+                            with((operation as CreateSpanOperation<EditorTextStyle>).span) {
+                                setSpan(editTextLocal, id, this.area) {
+                                    StyleSpan(styleToTypeface(value))
+                                }
+                            }
                         }
-                        return
                     }
                 }
+                editTextLocal.restoreFloatingMenu(selection)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun boldifyText(metadata: InputMetadata, editText: CustomEditText) {
-        lateinit var newMetadata: InputMetadata
-
-        when {
-            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD) -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD, Operation.DELETE)
-                updateTextStyle(editText, Typeface.NORMAL)
-            }
-
-            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD_ITALIC) -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Operation.DELETE)
-                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.ITALIC, Operation.INSERT)
-                updateTextStyle(editText, Typeface.ITALIC)
-            }
-
-            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.ITALIC) -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Operation.INSERT)
-                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.ITALIC, Operation.DELETE)
-                updateTextStyle(editText, Typeface.BOLD_ITALIC)
-            }
-
-            else -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD, Operation.INSERT)
-                updateTextStyle(editText, Typeface.BOLD)
-            }
+    private fun styleToTypeface(style: EditorTextStyle): Int =
+        when(style) {
+            EditorTextStyle.ITALIC -> Typeface.ITALIC
+            EditorTextStyle.BOLD -> Typeface.BOLD
+            EditorTextStyle.BOLD_ITALIC -> Typeface.BOLD_ITALIC
+            else -> throw UnsupportedOperationException("This style is not supported: $style")
         }
-        editText.tag = newMetadata
+
+    private fun setSpan(editText: CustomEditText, id: Long, area: IntRange, createSpan: () -> CharacterStyle) {
+        val span = createSpan()
+
+        val text = SpannableStringBuilder(editText.text)
+        text.setSpan(span, area.first, area.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+        editText.text = text
+
+        spans[id] = span
     }
 
-    private fun italicizeText(metadata: InputMetadata, editText: CustomEditText) {
-        lateinit var newMetadata: InputMetadata
-
-        when {
-            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.ITALIC) -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.ITALIC, Operation.DELETE)
-                updateTextStyle(editText, Typeface.NORMAL)
-            }
-
-            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD_ITALIC) -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Operation.DELETE)
-                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.BOLD, Operation.INSERT)
-                updateTextStyle(editText, Typeface.BOLD)
-            }
-
-            editorCore.containsStyle(metadata.editorTextStyles, EditorTextStyle.BOLD) -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.BOLD_ITALIC, Operation.INSERT)
-                newMetadata = editorCore.updateMetadataStyle(newMetadata, EditorTextStyle.BOLD, Operation.DELETE)
-                updateTextStyle(editText, Typeface.BOLD_ITALIC)
-            }
-
-            else -> {
-                newMetadata = editorCore.updateMetadataStyle(metadata, EditorTextStyle.ITALIC, Operation.INSERT)
-                updateTextStyle(editText, Typeface.ITALIC)
-            }
-        }
-        editText.tag = newMetadata
-    }
-
-    private fun updateTextStyle(editText: CustomEditText, typeFace: Int) =
-        setSpanToSelection(editText) {
-            StyleSpan(typeFace)
-        }
-
-    private fun setSpanToSelection(editText: CustomEditText, createSpan: () -> CharacterStyle) {
-        editText.selectionArea?.let { selection ->
+    private fun removeSpan(editText: CustomEditText, id: Long) {
+        spans[id]?.let { spanToRemove ->
             val text = SpannableStringBuilder(editText.text)
-
-            val span = createSpan()
-            spans[IdUtil.generateLongId()] = span
-
-            text.setSpan(span, selection.first, selection.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
-
-            // Put text
+            text.removeSpan(spanToRemove)
             editText.text = text
 
-            editText.restoreFloatingMenu(selection)
+            spans.remove(id)
         }
     }
 
@@ -560,36 +520,37 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     }
 
     fun getInputHtml(item: Node): String {
-        var isParagraph = true
-        var tmpl = componentsWrapper!!.htmlExtensions!!.getTemplateHtml(item.type!!)
-        //  CharSequence content= android.text.Html.fromHtml(item.content.get(0)).toString();
-        //  CharSequence trimmed= editorCore.getInputExtensions().noTrailingwhiteLines(content);
-        val trimmed = Jsoup.parse(item.content!![0]).body().select("p").html()
-        val styles = HashMap<Enum<*>, String>()
-        if (item.contentStyles!!.size > 0) {
-            for (style in item.contentStyles!!) {
-                when (style) {
-                    EditorTextStyle.BOLD -> tmpl = tmpl.replace("{{\$content}}", "<b>{{\$content}}</b>")
-                    EditorTextStyle.BOLD_ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<b><i>{{\$content}}</i></b>")
-                    EditorTextStyle.ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<i>{{\$content}}</i>")
-                    EditorTextStyle.NORMAL -> {
-                        tmpl = tmpl.replace("{{\$tag}}", "p")
-                        isParagraph = true
-                    }
-                }
-            }
-        }
-
-        styles[TEXT_COLOR] = "color:" + item.textSettings!!.textColor!!
-
-        if (item.type === EditorType.OL_LI || item.type === EditorType.UL_LI) {
-            tmpl = tmpl.replace("{{\$tag}}", "span")
-        } else if (isParagraph) {
-            tmpl = tmpl.replace("{{\$tag}}", "p")
-        }
-        tmpl = tmpl.replace("{{\$content}}", trimmed)
-        tmpl = tmpl.replace(" {{\$style}}", createStyleTag(styles))
-        return tmpl
+        return ""
+//        var isParagraph = true
+//        var tmpl = componentsWrapper!!.htmlExtensions!!.getTemplateHtml(item.type!!)
+//        //  CharSequence content= android.text.Html.fromHtml(item.content.get(0)).toString();
+//        //  CharSequence trimmed= editorCore.getInputExtensions().noTrailingwhiteLines(content);
+//        val trimmed = Jsoup.parse(item.content!![0]).body().select("p").html()
+//        val styles = HashMap<Enum<*>, String>()
+//        if (item.styleSpans!!.size > 0) {
+//            for (style in item.styleSpans!!) {
+//                when (style) {
+//                    EditorTextStyle.BOLD -> tmpl = tmpl.replace("{{\$content}}", "<b>{{\$content}}</b>")
+//                    EditorTextStyle.BOLD_ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<b><i>{{\$content}}</i></b>")
+//                    EditorTextStyle.ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<i>{{\$content}}</i>")
+//                    EditorTextStyle.NORMAL -> {
+//                        tmpl = tmpl.replace("{{\$tag}}", "p")
+//                        isParagraph = true
+//                    }
+//                }
+//            }
+//        }
+//
+//        styles[TEXT_COLOR] = "color:" + item.colorSpans!!.textColor!!
+//
+//        if (item.type === EditorType.OL_LI || item.type === EditorType.UL_LI) {
+//            tmpl = tmpl.replace("{{\$tag}}", "span")
+//        } else if (isParagraph) {
+//            tmpl = tmpl.replace("{{\$tag}}", "p")
+//        }
+//        tmpl = tmpl.replace("{{\$content}}", trimmed)
+//        tmpl = tmpl.replace(" {{\$style}}", createStyleTag(styles))
+//        return tmpl
     }
 
     private fun createStyleTag(styles: Map<Enum<*>, String>): String {
@@ -604,15 +565,15 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     }
 
     fun applyTextSettings(node: Node, view: TextView) {
-        if (node.contentStyles != null) {
-            for (style in node.contentStyles!!) {
-                updateTextStyle(style, view)
-            }
-
-            if (!TextUtils.isEmpty(node.textSettings!!.textColor)) {
-                updateTextColor(node.textSettings!!.textColor!!, view)
-            }
-        }
+//        if (node.styleSpans != null) {
+//            for (style in node.styleSpans!!) {
+//                updateTextStyle(style, view)
+//            }
+//
+//            if (!TextUtils.isEmpty(node.colorSpans!!.textColor)) {
+//                updateTextColor(node.colorSpans!!.textColor!!, view)
+//            }
+//        }
     }
 
     fun removeFocus(editText: CustomEditText) {
