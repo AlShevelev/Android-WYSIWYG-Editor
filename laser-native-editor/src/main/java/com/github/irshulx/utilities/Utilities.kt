@@ -1,4 +1,4 @@
-package com.github.irshulx.Utilities
+package com.github.irshulx.utilities
 
 import android.app.Activity
 import android.content.Context

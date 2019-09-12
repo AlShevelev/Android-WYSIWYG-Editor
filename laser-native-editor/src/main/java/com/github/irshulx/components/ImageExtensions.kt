@@ -24,10 +24,10 @@ import com.bumptech.glide.request.target.Target
 import com.github.irshulx.EditorComponent
 import com.github.irshulx.EditorCore
 import com.github.irshulx.R
-import com.github.irshulx.components.edit_text.CustomEditText
+import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.ControlMetadata
-import com.github.irshulx.models.control_metadata.InputMetadata
+import com.github.irshulx.models.control_metadata.ImageDescriptionMetadata
 import com.github.irshulx.models.control_metadata.ImageMetadata
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -57,7 +57,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
 
             val subTitleNode = getNodeInstance(textView)
 
-            val descTag = textView.tag as InputMetadata
+            val descTag = textView.tag as ImageDescriptionMetadata
             subTitleNode.contentStyles = descTag.editorTextStyles
             subTitleNode.textSettings = descTag.textSettings
 
@@ -215,7 +215,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
     }
 
     fun createSubTitleTag(): ControlMetadata {
-        val subTag = InputMetadata(EditorType.IMG_SUB)
+        val subTag = ImageDescriptionMetadata(EditorType.IMG_SUB)
         subTag.textSettings = TextSettings("#5E5E5E")
         return subTag
     }

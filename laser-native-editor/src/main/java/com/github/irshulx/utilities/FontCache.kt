@@ -1,4 +1,4 @@
-package com.github.irshulx.Utilities
+package com.github.irshulx.utilities
 
 import android.content.Context
 import android.graphics.Typeface

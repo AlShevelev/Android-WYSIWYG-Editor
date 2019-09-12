@@ -1,4 +1,4 @@
-package com.github.irshulx.components.edit_text
+package com.github.irshulx.components.input.edit_text
 
 import android.support.design.widget.TextInputEditText
 import android.view.KeyEvent

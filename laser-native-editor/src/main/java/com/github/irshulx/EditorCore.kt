@@ -15,8 +15,9 @@ import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
 import com.github.irshulx.components.*
-import com.github.irshulx.Utilities.Utilities
-import com.github.irshulx.components.edit_text.CustomEditText
+import com.github.irshulx.utilities.Utilities
+import com.github.irshulx.components.input.edit_text.CustomEditText
+import com.github.irshulx.components.input.InputExtensions
 import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.ControlMetadata
 import com.github.irshulx.models.control_metadata.InputMetadata
@@ -479,9 +480,9 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         return false
     }
 
-    fun updateMetadataStyle(metadata: InputMetadata, style: EditorTextStyle, _op: Op): InputMetadata {
+    fun updateMetadataStyle(metadata: InputMetadata, style: EditorTextStyle, _operation: Operation): InputMetadata {
         val styles = metadata.editorTextStyles
-        if (_op === Op.DELETE) {
+        if (_operation === Operation.DELETE) {
             val index = styles.indexOf(style)
             if (index != -1) {
                 styles.removeAt(index)

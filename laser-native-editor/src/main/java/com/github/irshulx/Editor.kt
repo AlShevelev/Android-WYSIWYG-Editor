@@ -7,7 +7,7 @@ import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.View
 
-import com.github.irshulx.components.edit_text.CustomEditText
+import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.models.EditorTextStyle
 import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.RenderType

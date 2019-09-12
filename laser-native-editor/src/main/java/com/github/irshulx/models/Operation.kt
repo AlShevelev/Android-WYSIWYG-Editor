@@ -1,7 +1,6 @@
 package com.github.irshulx.models
 
-enum class Op {
+enum class Operation {
     INSERT,
-    DELETE,
-    UPDATE
+    DELETE
 }

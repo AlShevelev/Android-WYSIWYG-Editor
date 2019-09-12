@@ -7,8 +7,8 @@ import android.widget.ImageView
 import com.github.irshulx.EditorComponent
 import com.github.irshulx.EditorCore
 import com.github.irshulx.R
-import com.github.irshulx.Utilities.Utilities
-import com.github.irshulx.components.edit_text.CustomEditText
+import com.github.irshulx.utilities.Utilities
+import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.Node

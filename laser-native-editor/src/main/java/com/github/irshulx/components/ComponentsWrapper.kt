@@ -1,13 +1,15 @@
 package com.github.irshulx.components
 
+import com.github.irshulx.components.input.InputExtensions
+
 class ComponentsWrapper(
-    val inputExtensions: InputExtensions?,
-    val dividerExtensions: DividerExtensions?,
-    val htmlExtensions: HTMLExtensions?,
-    val imageExtensions: ImageExtensions?,
-    val listItemExtensions: ListItemExtensions?,
-    val mapExtensions: MapExtensions?,
-    val macroExtensions: MacroExtensions?) {
+        val inputExtensions: InputExtensions?,
+        val dividerExtensions: DividerExtensions?,
+        val htmlExtensions: HTMLExtensions?,
+        val imageExtensions: ImageExtensions?,
+        val listItemExtensions: ListItemExtensions?,
+        val mapExtensions: MapExtensions?,
+        val macroExtensions: MacroExtensions?) {
 
     class Builder {
         private var inputExtensions: InputExtensions? = null
