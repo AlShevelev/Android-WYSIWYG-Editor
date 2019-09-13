@@ -42,4 +42,9 @@
         <item name="android:textColor">#000</item>
     </style>
 
+    <!-- Theme for dialogs on Main screen -->
+    <style name="App.Activity.Main.Dialog.Theme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorAccent">@color/colorPrimary</item>  <!--Buttons-->
+        <item name="android:textColorPrimary">@color/darkertext</item> <!--Text-->
+    </style>
 </resources>

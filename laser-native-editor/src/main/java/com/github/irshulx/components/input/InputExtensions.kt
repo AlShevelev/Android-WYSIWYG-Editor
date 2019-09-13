@@ -4,16 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Handler
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.support.v7.view.ContextThemeWrapper
-import android.text.Editable
-import android.text.Html
-import android.text.InputType
-import android.text.SpannableStringBuilder
-import android.text.Spanned
-import android.text.TextUtils
-import android.text.TextWatcher
+import android.text.*
 import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
@@ -25,36 +16,26 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
-
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.view.ContextThemeWrapper
+import androidx.core.content.ContextCompat
 import com.github.irshulx.EditorComponent
 import com.github.irshulx.EditorCore
 import com.github.irshulx.R
 import com.github.irshulx.components.ComponentsWrapper
 import com.github.irshulx.components.ListItemExtensions
-import com.github.irshulx.utilities.FontCache
-import com.github.irshulx.utilities.Utilities
 import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.components.input.spans.CreateSpanOperation
 import com.github.irshulx.components.input.spans.DeleteSpanOperation
-import com.github.irshulx.models.EditorContent
-import com.github.irshulx.models.EditorTextStyle
-import com.github.irshulx.models.EditorType
-import com.github.irshulx.models.HtmlTag
-import com.github.irshulx.models.Node
-import com.github.irshulx.models.Operation
-import com.github.irshulx.models.RenderType
-import com.github.irshulx.models.TextSettings
-
+import com.github.irshulx.models.*
+import com.github.irshulx.models.control_metadata.InputMetadata
+import com.github.irshulx.utilities.FontCache
+import com.github.irshulx.utilities.MaterialColor
+import com.github.irshulx.utilities.Utilities
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-
-import java.util.HashMap
-import java.util.Locale
+import java.util.*
 import java.util.regex.Pattern
-
-import com.github.irshulx.models.TextSetting.TEXT_COLOR
-import com.github.irshulx.models.control_metadata.InputMetadata
-import java.lang.UnsupportedOperationException
 
 class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
     var defaultTextColor = "#000000"
@@ -132,16 +113,15 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun updateTextColor(color: String, editText: TextView?) {
+    fun updateTextColor(color: MaterialColor, editText: TextView?) {
         try {
             val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
 
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea?.let { selection ->
-                val translatedColor = translateColor(color)
                 val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
 
-                val spanOperations = metadata.colorSpans.add(selection, Color.parseColor(translatedColor))
+                val spanOperations = metadata.colorSpans.add(selection, MaterialColor.toSystemColor(color, editTextLocal.context))
 
                 spanOperations.forEach { operation ->
                     when(operation) {
@@ -512,7 +492,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     fun applyStyles(editText: TextView, element: Element) {
         val styles = componentsWrapper!!.htmlExtensions!!.getStyleMap(element)
         if (styles.containsKey("color")) {
-            updateTextColor(styles["color"]!!, editText)
+            updateTextColor(MaterialColor.BLACK, editText)
         }
     }
 

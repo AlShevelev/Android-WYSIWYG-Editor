@@ -1,14 +1,14 @@
 package com.github.irshulx.components.input.edit_text
 
-import android.support.design.widget.TextInputEditText
 import android.view.KeyEvent
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputConnectionWrapper
+import com.google.android.material.textfield.TextInputEditText
 
 class CustomInputConnection(
-    private val editText: TextInputEditText,
-    target: InputConnection,
-    mutable: Boolean
+        private val editText: TextInputEditText,
+        target: InputConnection,
+        mutable: Boolean
 ) : InputConnectionWrapper(target, mutable) {
 
     override fun sendKeyEvent(event: KeyEvent): Boolean {

@@ -11,6 +11,8 @@ import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.models.EditorTextStyle
 import com.github.irshulx.models.EditorContent
 import com.github.irshulx.models.RenderType
+import com.github.irshulx.utilities.MaterialColor
+import com.google.android.material.resources.MaterialResources
 
 class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs) {
 
@@ -176,7 +178,7 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
         inputExtensions!!.updateTextStyle(style, null)
     }
 
-    fun updateTextColor(color: String) {
+    fun updateTextColor(color: MaterialColor) {
         inputExtensions!!.updateTextColor(color, null)
     }
 

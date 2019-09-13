@@ -3,7 +3,6 @@ package com.github.irshulx.wysiwyg.Utilities
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
-import android.view.View
 import android.widget.EditText
 
 /**

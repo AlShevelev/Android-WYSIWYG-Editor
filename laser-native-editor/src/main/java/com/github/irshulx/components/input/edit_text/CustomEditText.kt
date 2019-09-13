@@ -2,10 +2,10 @@ package com.github.irshulx.components.input.edit_text
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.support.design.widget.TextInputEditText
 import android.util.AttributeSet
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
+import com.google.android.material.textfield.TextInputEditText
 
 @SuppressLint("ClickableViewAccessibility")
 class CustomEditText

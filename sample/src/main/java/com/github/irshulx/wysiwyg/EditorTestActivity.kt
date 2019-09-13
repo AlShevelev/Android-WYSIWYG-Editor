@@ -2,34 +2,28 @@ package com.github.irshulx.wysiwyg
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.v7.app.AppCompatActivity
 import android.text.Editable
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.Toast
-
+import androidx.appcompat.app.AppCompatActivity
 import com.github.irshulx.Editor
 import com.github.irshulx.EditorListener
-import com.github.irshulx.models.EditorContent
+import com.github.irshulx.dialogs.selectColor.SelectColorDialog
 import com.github.irshulx.models.EditorTextStyle
+import com.github.irshulx.utilities.MaterialColor
 import kotlinx.android.synthetic.main.activity_editor_test.*
-
-import java.io.IOException
-import java.util.HashMap
-import java.util.Locale
-
 import top.defaults.colorpicker.ColorPickerPopup
+import java.io.IOException
+import java.util.*
 
 class EditorTestActivity : AppCompatActivity() {
     internal lateinit var editor: Editor
@@ -74,24 +68,29 @@ class EditorTestActivity : AppCompatActivity() {
 
 
         findViewById<View>(R.id.action_color).setOnClickListener {
-            ColorPickerPopup.Builder(this@EditorTestActivity)
-                    .initialColor(Color.RED) // Set initial color
-                    .enableAlpha(true) // Enable alpha slider or not
-                    .okTitle("Choose")
-                    .cancelTitle("Cancel")
-                    .showIndicator(true)
-                    .showValue(true)
-                    .build()
-                    .show(findViewById(android.R.id.content), object : ColorPickerPopup.ColorPickerObserver {
-                        override fun onColorPicked(color: Int) {
-                            Toast.makeText(this@EditorTestActivity, "picked" + colorHex(color), Toast.LENGTH_LONG).show()
-                            editor.updateTextColor(colorHex(color))
-                        }
+            SelectColorDialog(this, MaterialColor.BLACK, "Select color", "Ok", "Cancel") { selectedColor ->
+                selectedColor?.let { editor.updateTextColor(it) }
+            }
+            .show()
 
-                        override fun onColor(color: Int, fromUser: Boolean) {
-
-                        }
-                    })
+//            ColorPickerPopup.Builder(this@EditorTestActivity)
+//                    .initialColor(Color.RED) // Set initial color
+//                    .enableAlpha(true) // Enable alpha slider or not
+//                    .okTitle("Choose")
+//                    .cancelTitle("Cancel")
+//                    .showIndicator(true)
+//                    .showValue(true)
+//                    .build()
+//                    .show(findViewById(android.R.id.content), object : ColorPickerPopup.ColorPickerObserver {
+//                        override fun onColorPicked(color: Int) {
+//                            Toast.makeText(this@EditorTestActivity, "picked" + colorHex(color), Toast.LENGTH_LONG).show()
+//                            editor.updateTextColor(colorHex(color))
+//                        }
+//
+//                        override fun onColor(color: Int, fromUser: Boolean) {
+//
+//                        }
+//                    })
         }
 
         findViewById<View>(R.id.action_insert_image).setOnClickListener { editor.openImagePicker() }
@@ -236,6 +235,8 @@ class EditorTestActivity : AppCompatActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
         if (requestCode == editor.PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.data != null) {
             val uri = data.data
             try {

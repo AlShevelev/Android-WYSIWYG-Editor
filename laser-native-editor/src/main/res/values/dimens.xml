@@ -8,6 +8,7 @@
     <dimen name="body_text">14sp</dimen>
     <dimen name="larger_text">16sp</dimen>
     <dimen name="extra_large_text">18sp</dimen>
+
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="nav_header_vertical_spacing">16dp</dimen>
     <dimen name="nav_header_height">160dp</dimen>
@@ -15,4 +16,14 @@
     <dimen name="text_margin">16dp</dimen>
     <dimen name="appbar_padding_top">8dp</dimen>
     <dimen name="edittext_margin_bottom">20dp</dimen>
+
+    <!--<editor-fold desc="Strokes width">-->
+    <dimen name="strokeThin">1dp</dimen>
+    <dimen name="strokeNormal">2dp</dimen>
+    <!--</editor-fold>-->
+
+    <!--<editor-fold desc="Color selection control">-->
+    <dimen name="selectColorItemSize">40dp</dimen>
+    <dimen name="selectColorMargin">5dp</dimen>
+    <!--</editor-fold>-->
 </resources>
