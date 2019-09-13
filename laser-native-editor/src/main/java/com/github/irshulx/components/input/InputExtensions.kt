@@ -156,7 +156,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                         }
                     }
                 }
-                editTextLocal.restoreFloatingMenu(selection)
             }
         } catch (ex: Exception) {
             ex.printStackTrace()
@@ -340,7 +339,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                         }
                     }
                 }
-                editTextLocal.restoreFloatingMenu(selection)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -358,18 +356,17 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     private fun setSpan(editText: CustomEditText, id: Long, area: IntRange, createSpan: () -> CharacterStyle) {
         val span = createSpan()
 
-        val text = SpannableStringBuilder(editText.text)
+        val text = editText.text as SpannableStringBuilder
         text.setSpan(span, area.first, area.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
-        editText.text = text
 
         spans[id] = span
     }
 
     private fun removeSpan(editText: CustomEditText, id: Long) {
         spans[id]?.let { spanToRemove ->
-            val text = SpannableStringBuilder(editText.text)
+
+            val text = editText.text as SpannableStringBuilder
             text.removeSpan(spanToRemove)
-            editText.text = text
 
             spans.remove(id)
         }
