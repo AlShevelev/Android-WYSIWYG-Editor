@@ -23,4 +23,6 @@
     <color name="overlay_light" type="color">#80ffffff</color>
     <color name="overlay" type="color">#80EE3124</color>
     <color name="blue_overlay" type="color">#803b5999</color>
+
+    <color name="gray_overlay" type="color">#80ACACAC</color>
 </resources>
