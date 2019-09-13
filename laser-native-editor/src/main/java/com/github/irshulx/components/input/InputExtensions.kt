@@ -25,8 +25,10 @@ import com.github.irshulx.R
 import com.github.irshulx.components.ComponentsWrapper
 import com.github.irshulx.components.ListItemExtensions
 import com.github.irshulx.components.input.edit_text.CustomEditText
+import com.github.irshulx.components.input.spans.ColorSpansCalculator
 import com.github.irshulx.components.input.spans.CreateSpanOperation
 import com.github.irshulx.components.input.spans.DeleteSpanOperation
+import com.github.irshulx.components.input.spans.StyleSpansCalculator
 import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.InputMetadata
 import com.github.irshulx.utilities.FontCache
@@ -48,11 +50,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     var headingTypeface: Map<Int, String>? = null
     private var lineSpacing = -1f
 
-    /**
-     * Set of spans (id: span)
-     */
-    private val spans = mutableMapOf<Long, CharacterStyle>()
-
     fun getFontFace(): String {
         return editorCore.context.resources.getString(fontFace)
     }
@@ -64,9 +61,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     override fun getContent(view: View): Node {
         val node = this.getNodeInstance(view)
         val tag = view.getTag() as InputMetadata
-        node.styleSpans = tag.styleSpans
         node.content!!.add(Html.toHtml((view as EditText).text))
-        node.colorSpans = tag.colorSpans
         return node
     }
 
@@ -119,19 +114,18 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea?.let { selection ->
-                val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
+                val spannableString = editTextLocal.text as SpannableStringBuilder
 
-                val spanOperations = metadata.colorSpans.add(selection, MaterialColor.toSystemColor(color, editTextLocal.context))
+                val calculator = ColorSpansCalculator(spannableString)
+                val spanOperations = calculator.calculate(selection, MaterialColor.toSystemColor(color, editTextLocal.context))
 
                 spanOperations.forEach { operation ->
                     when(operation) {
-                        is DeleteSpanOperation -> removeSpan(editTextLocal, operation.spanId)
+                        is DeleteSpanOperation -> spannableString.removeSpan(operation.span)
 
                         is CreateSpanOperation<*> -> {
-                            with((operation as CreateSpanOperation<Int>).span) {
-                                setSpan(editTextLocal, id, this.area) {
-                                    ForegroundColorSpan(value)
-                                }
+                            with((operation as CreateSpanOperation<Int>).spanInfo) {
+                                spannableString.setSpan(ForegroundColorSpan(value), area.first, area.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
                             }
                         }
                     }
@@ -303,23 +297,25 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea?.let { selection ->
-                val metadata = editorCore.getControlMetadata(editTextLocal) as InputMetadata
-                val spanOperations = metadata.styleSpans.add(selection, style)
+                val spannableString = editTextLocal.text as SpannableStringBuilder
+
+                val calculator = StyleSpansCalculator(spannableString)
+                val spanOperations = calculator.calculate(selection, style)
 
                 spanOperations.forEach { operation ->
                     when(operation) {
-                        is DeleteSpanOperation -> removeSpan(editTextLocal, operation.spanId)
+                        is DeleteSpanOperation -> spannableString.removeSpan(operation.span)
 
                         is CreateSpanOperation<*> -> {
-                            with((operation as CreateSpanOperation<EditorTextStyle>).span) {
-                                setSpan(editTextLocal, id, this.area) {
-                                    StyleSpan(styleToTypeface(value))
-                                }
+                            with((operation as CreateSpanOperation<EditorTextStyle>).spanInfo) {
+                                spannableString.setSpan(
+                                    StyleSpan(styleToTypeface(value)), area.first, area.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
                             }
                         }
                     }
                 }
             }
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -332,25 +328,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             EditorTextStyle.BOLD_ITALIC -> Typeface.BOLD_ITALIC
             else -> throw UnsupportedOperationException("This style is not supported: $style")
         }
-
-    private fun setSpan(editText: CustomEditText, id: Long, area: IntRange, createSpan: () -> CharacterStyle) {
-        val span = createSpan()
-
-        val text = editText.text as SpannableStringBuilder
-        text.setSpan(span, area.first, area.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
-
-        spans[id] = span
-    }
-
-    private fun removeSpan(editText: CustomEditText, id: Long) {
-        spans[id]?.let { spanToRemove ->
-
-            val text = editText.text as SpannableStringBuilder
-            text.removeSpan(spanToRemove)
-
-            spans.remove(id)
-        }
-    }
 
     fun insertLink() {
         val inputAlert = AlertDialog.Builder(this.editorCore.context)

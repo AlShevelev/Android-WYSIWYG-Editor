@@ -48,7 +48,7 @@ class HTMLExtensions(internal var editorCore: EditorCore) {
     }
 
     fun getHtmlSpan(element: Element): String {
-        val el = Element(Tag.valueOf("span"), "")
+        val el = Element(Tag.valueOf("spanInfo"), "")
         el.attributes().put("style", element.attr("style"))
         el.html(element.html())
         return el.toString()

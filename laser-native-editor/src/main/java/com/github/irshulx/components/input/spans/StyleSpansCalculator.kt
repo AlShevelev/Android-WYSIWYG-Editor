@@ -1,13 +1,16 @@
 package com.github.irshulx.components.input.spans
 
+import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.style.StyleSpan
 import com.github.irshulx.models.EditorTextStyle
-import com.github.irshulx.utilities.IdUtil
 import java.lang.UnsupportedOperationException
+import kotlin.reflect.KClass
 
-class StyleSpansCollection : SpansCollection<EditorTextStyle>() {
-    fun add(area: IntRange, style: EditorTextStyle) =
+class StyleSpansCalculator(spannedText: SpannableStringBuilder) : SpansCalculator<EditorTextStyle>(spannedText) {
+    fun calculate(area: IntRange, style: EditorTextStyle) =
         if(style == EditorTextStyle.BOLD || style == EditorTextStyle.ITALIC) {
-            add(create(area, style))
+            calculate(createSpanInfo(area, style))
         } else {
             throw UnsupportedOperationException("This style is not supported: $style")
         }
@@ -34,8 +37,20 @@ class StyleSpansCollection : SpansCollection<EditorTextStyle>() {
         }
     }
 
-    override fun Span<EditorTextStyle>.copy(newValue: EditorTextStyle): Span<EditorTextStyle> = StyleSpan(id, area, newValue)
+    override fun SpanInfo<EditorTextStyle>.copy(newValue: EditorTextStyle): SpanInfo<EditorTextStyle> = StyleSpanInfo(area, newValue)
 
-    override fun create(area: IntRange, newValue: EditorTextStyle): Span<EditorTextStyle> =
-        StyleSpan(IdUtil.generateLongId(), area, newValue)
+    override fun createSpanInfo(area: IntRange, newValue: EditorTextStyle): SpanInfo<EditorTextStyle> =
+        StyleSpanInfo(area, newValue)
+
+    override fun getSpanClass(): KClass<*> = StyleSpan::class
+
+    override fun getSpanValue(rawSpan: Any): EditorTextStyle =
+        (rawSpan as StyleSpan).style.let { typeface ->
+            when(typeface) {
+                Typeface.ITALIC -> EditorTextStyle.ITALIC
+                Typeface.BOLD -> EditorTextStyle.BOLD
+                Typeface.BOLD_ITALIC -> EditorTextStyle.BOLD_ITALIC
+                else -> throw UnsupportedOperationException("This typeface is not supported: $typeface")
+            }
+        }
 }

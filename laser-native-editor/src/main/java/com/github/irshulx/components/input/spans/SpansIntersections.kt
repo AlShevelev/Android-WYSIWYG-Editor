@@ -1,18 +1,18 @@
 package com.github.irshulx.components.input.spans
 
 class SpansIntersections<T>() {
-    val spansIntersectFull = mutableListOf<Span<T>>()
+    val spansIntersectFull = mutableListOf<SpanInfo<T>>()
 
-    val spansInsideFull = mutableListOf<Span<T>>()
+    val spansInsideFull = mutableListOf<SpanInfo<T>>()
 
-    val spansInsideLeft = mutableListOf<Span<T>>()
+    val spansInsideLeft = mutableListOf<SpanInfo<T>>()
 
-    val spansInsideRight = mutableListOf<Span<T>>()
+    val spansInsideRight = mutableListOf<SpanInfo<T>>()
 
     /**
      * The list of spans that cover completely the new one
      */
-    val spansOutsideFull = mutableListOf<Span<T>>()
+    val spansOutsideFull = mutableListOf<SpanInfo<T>>()
 
     fun hasIntersections() = spansIntersectFull.isNotEmpty() || spansInsideFull.isNotEmpty() || spansInsideLeft.isNotEmpty() ||
             spansInsideRight.isNotEmpty() || spansOutsideFull.isNotEmpty()

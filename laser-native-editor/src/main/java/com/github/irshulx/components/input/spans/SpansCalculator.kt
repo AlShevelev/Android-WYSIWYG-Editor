@@ -1,15 +1,42 @@
 package com.github.irshulx.components.input.spans
 
-abstract class SpansCollection<T> {
-    private val spans = mutableListOf<Span<T>>()
+import android.text.SpannableStringBuilder
+import android.text.style.CharacterStyle
+import kotlin.reflect.KClass
 
-    protected fun add(span: Span<T>): List<SpanOperation> {
+@Suppress("LeakingThis")
+abstract class SpansCalculator<T>(spannedText: SpannableStringBuilder) {
+    private val spans: List<SpanInfo<T>>
+    private val spansInText: Map<SpanInfo<T>, CharacterStyle>
+
+    init {
+        // Spans list filling
+        val spans = mutableListOf<SpanInfo<T>>()
+        val spansInText = mutableMapOf<SpanInfo<T>, CharacterStyle>()
+
+        spannedText.getSpans(0, spannedText.length, getSpanClass().java)
+            .forEach { span ->
+                val value = getSpanValue(span)
+                val start = spannedText.getSpanStart(span)
+                val end = spannedText.getSpanEnd(span)
+
+                createSpanInfo(start..end, value)
+                    .let {
+                        spans.add(it)
+                        spansInText[it] = span as CharacterStyle
+                    }
+            }
+
+        this.spans = spans
+        this.spansInText = spansInText
+    }
+
+    protected fun calculate(span: SpanInfo<T>): List<SpanOperation> {
         if(span.area.first >= span.area.last) {
             return listOf()
         }
 
         if(spans.isEmpty()) {
-            spans.add(span)
             return listOf(CreateSpanOperation(span))
         }
 
@@ -24,11 +51,15 @@ abstract class SpansCollection<T> {
     /**
      * @return null - no span needed
      */
-    protected abstract fun Span<T>.copy(newValue: T): Span<T>
+    protected abstract fun SpanInfo<T>.copy(newValue: T): SpanInfo<T>
 
-    protected abstract fun create(area: IntRange, newValue: T): Span<T>
+    protected abstract fun createSpanInfo(area: IntRange, newValue: T): SpanInfo<T>
 
-    private fun calculateIntersections(span: Span<T>): SpansIntersections<T> {
+    protected abstract fun getSpanClass(): KClass<*>
+
+    protected abstract fun getSpanValue(rawSpan: Any): T
+
+    private fun calculateIntersections(span: SpanInfo<T>): SpansIntersections<T> {
         val intersections = SpansIntersections<T>()
 
         spans.forEach {
@@ -56,12 +87,11 @@ abstract class SpansCollection<T> {
         return intersections
     }
 
-    private fun calculateOperations(span: Span<T>, intersections: SpansIntersections<T>): List<SpanOperation> {
+    private fun calculateOperations(span: SpanInfo<T>, intersections: SpansIntersections<T>): List<SpanOperation> {
         val result = mutableListOf<SpanOperation>()
 
         // Without intersections
         if(!intersections.hasIntersections()) {
-            spans.add(span)
             result.add(CreateSpanOperation(span))
             return result
         }
@@ -74,12 +104,10 @@ abstract class SpansCollection<T> {
                 return result
             }
 
-            spans.remove(fullIntersection)
-            result.add(DeleteSpanOperation(fullIntersection.id))
+            result.add(DeleteSpanOperation(spansInText.getValue(fullIntersection)))
 
             newSpanValue?.let {
                 span.copy(it).let { newSpan ->
-                    spans.add(newSpan)
                     result.add(CreateSpanOperation(newSpan))
                 }
             }
@@ -95,20 +123,16 @@ abstract class SpansCollection<T> {
                 return result
             }
 
-            spans.remove(oldFullOutside)
-            result.add(DeleteSpanOperation(oldFullOutside.id))
+            result.add(DeleteSpanOperation(spansInText.getValue(oldFullOutside)))
 
-            val newLeftSpan = create(oldFullOutside.area.first..span.area.first, oldFullOutside.value)
-            spans.add(newLeftSpan)
+            val newLeftSpan = createSpanInfo(oldFullOutside.area.first..span.area.first, oldFullOutside.value)
             result.add(CreateSpanOperation(newLeftSpan))
 
-            val newRightSpan = create(span.area.last..oldFullOutside.area.last, oldFullOutside.value)
-            spans.add(newRightSpan)
+            val newRightSpan = createSpanInfo(span.area.last..oldFullOutside.area.last, oldFullOutside.value)
             result.add(CreateSpanOperation(newRightSpan))
 
             newSpanValue?.let {
                 span.copy(it).let { newSpan ->
-                    spans.add(newSpan)
                     result.add(CreateSpanOperation(newSpan))
                 }
             }
@@ -118,17 +142,14 @@ abstract class SpansCollection<T> {
 
         // Remove full inside spans
         intersections.spansInsideFull.forEach { insideSpan ->
-            spans.remove(insideSpan)
-            result.add(DeleteSpanOperation(insideSpan.id))
+            result.add(DeleteSpanOperation(spansInText.getValue(insideSpan)))
         }
 
         // Process left-intersected spans
         intersections.spansInsideLeft.forEach { oldLeftSpan ->
-            create(oldLeftSpan.area.first..span.area.first, oldLeftSpan.value).let { newLeftSpan ->
-                spans.remove(oldLeftSpan)
-                result.add(DeleteSpanOperation(oldLeftSpan.id))
+            createSpanInfo(oldLeftSpan.area.first..span.area.first, oldLeftSpan.value).let { newLeftSpan ->
+                result.add(DeleteSpanOperation(spansInText.getValue(oldLeftSpan)))
 
-                spans.add(newLeftSpan)
                 result.add(CreateSpanOperation(newLeftSpan))
 
             }
@@ -136,18 +157,15 @@ abstract class SpansCollection<T> {
 
         // Process right-intersected spans
         intersections.spansInsideRight.forEach { oldRightSpan ->
-            create(span.area.last..oldRightSpan.area.last, oldRightSpan.value).let { newRightSpan ->
-                spans.remove(oldRightSpan)
-                result.add(DeleteSpanOperation(oldRightSpan.id))
+            createSpanInfo(span.area.last..oldRightSpan.area.last, oldRightSpan.value).let { newRightSpan ->
+                result.add(DeleteSpanOperation(spansInText.getValue(oldRightSpan)))
 
-                spans.add(newRightSpan)
                 result.add(CreateSpanOperation(newRightSpan))
 
             }
         }
 
         // Add new span
-        spans.add(span)
         result.add(CreateSpanOperation(span))
 
         return result
