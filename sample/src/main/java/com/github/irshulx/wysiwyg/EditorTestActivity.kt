@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.Editable
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -106,6 +107,10 @@ class EditorTestActivity : AppCompatActivity() {
         findViewById<View>(R.id.action_tag_edit).setOnClickListener { editor.editTag() }
         findViewById<View>(R.id.action_mention_edit).setOnClickListener { editor.editMention() }
         findViewById<View>(R.id.action_link_in_text_edit).setOnClickListener { editor.editLinkInText() }
+
+        editor.setOnSelectionTextChangeListener { isSelected ->
+            Log.d("SELECTION_TEST", "Area is selected: $isSelected")
+        }
 
         //editor.dividerBackground=R.drawable.divider_background_dark;
         //editor.setFontFace(R.string.fontFamily__serif);

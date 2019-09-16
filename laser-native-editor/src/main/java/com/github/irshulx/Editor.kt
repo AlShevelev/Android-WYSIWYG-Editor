@@ -16,6 +16,10 @@ import com.github.irshulx.utilities.MaterialColor
 import com.google.android.material.resources.MaterialResources
 
 class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs) {
+    /**
+     * @param the value is true if some text is selected, otherwise it's false
+     */
+    private var onSelectionTextChangeListener: ((Boolean) -> Unit)? = null
 
     override var editorListener: EditorListener?
         get() = super.editorListener
@@ -286,5 +290,9 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
 
     fun insertMacro(name: String, view: View, settings: MutableMap<String, Any>) {
         this.macroExtensions!!.insertMacro(name, view, settings, -1)
+    }
+
+    fun setOnSelectionTextChangeListener(listener: ((Boolean) -> Unit)?) {
+        inputExtensions?.setOnSelectionChangeListener(listener)
     }
 }

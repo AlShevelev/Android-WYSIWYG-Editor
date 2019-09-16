@@ -4,13 +4,14 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Handler
-import android.os.Looper
 import android.text.*
 import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.util.Linkify
 import android.util.TypedValue
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -62,6 +63,11 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
     private val editor: CustomEditText
         get() = editorCore.activeView as CustomEditText
+
+    /**
+     * @param the value is true if some text is selected, otherwise it's false
+     */
+    private var onSelectionChangeListener: ((Boolean) -> Unit)? = null
 
     fun getFontFace(): String {
         return editorCore.context.resources.getString(fontFace)
@@ -206,6 +212,10 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         textView.setLineSpacing((Utilities.dpToPx(editorCore.context, lineHeight) - fontHeight).toFloat(), 1f)
     }
 
+    fun setOnSelectionChangeListener(listener: ((Boolean) -> Unit)?) {
+        onSelectionChangeListener = listener
+    }
+
     private fun getNewEditTextInst(hint: String?, text: CharSequence?): CustomEditText {
         val editText = CustomEditText(ContextThemeWrapper(this.editorCore.context, R.style.WysiwygEditText))
         addEditableStyling(editText)
@@ -236,6 +246,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                 editorCore.activeView = v
             }
         }
+
         editText.addTextChangedListener(object : TextWatcher {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
 
@@ -307,6 +318,22 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                 }
             }
         })
+
+        editText.customSelectionActionModeCallback = object: android.view.ActionMode.Callback {
+            override fun onActionItemClicked(mode: android.view.ActionMode?, item: MenuItem?): Boolean = false
+
+            override fun onCreateActionMode(mode: android.view.ActionMode?, menu: Menu?): Boolean {
+                onSelectionChangeListener?.invoke(true)
+                return true
+            }
+
+            override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: Menu?): Boolean = false
+
+            override fun onDestroyActionMode(mode: android.view.ActionMode?) {
+                onSelectionChangeListener?.invoke(false)
+            }
+        }
+
         if (this.lineSpacing != -1f) {
             setLineSpacing(editText, this.lineSpacing)
         }
