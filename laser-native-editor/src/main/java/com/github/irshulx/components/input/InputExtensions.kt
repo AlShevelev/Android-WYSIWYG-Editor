@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Handler
+import android.os.Looper
 import android.text.*
 import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
@@ -43,6 +44,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
 import java.util.regex.Pattern
+import kotlin.reflect.KClass
 
 class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
     var defaultTextColor = "#000000"
@@ -57,6 +59,9 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
     @ColorInt
     private val specialSpansColors = Color.BLUE
+
+    private val editor: CustomEditText
+        get() = editorCore.activeView as CustomEditText
 
     fun getFontFace(): String {
         return editorCore.context.resources.getString(fontFace)
@@ -115,16 +120,40 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         textView.text = toReplace
     }
 
-    fun insertTag(tagText: String) = insertSpecialSpan("#$tagText", TagSpan(tagText, specialSpansColors))
+    fun insertTag(tagText: String) = insertTag(tagText, true)
 
-    fun insertMention(userName: String) = insertSpecialSpan("@$userName", MentionSpan(userName, specialSpansColors))
+    fun insertMention(userName: String) = insertMention(userName, true)
 
-    fun insertLinkInText(text: String, url: String) = insertSpecialSpan(text, LinkSpan(url, specialSpansColors))
+    fun insertLinkInText(text: String, url: String) = insertLinkInText(text, url, true)
+
+    fun editTag(tagText: String) {
+        if(removeSpecialSpan(TagSpan::class)) {
+            editor.post {
+                insertTag(tagText, false)
+            }
+        }
+    }
+
+    fun editMention(userName: String) {
+        if(removeSpecialSpan(MentionSpan::class)) {
+            editor.post {
+                insertMention(userName, false)
+            }
+        }
+    }
+
+    fun editLinkInText(text: String, url: String) {
+        if(removeSpecialSpan(LinkSpan::class)) {
+            editor.post {
+                insertLinkInText(text, url, false)
+            }
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
     fun updateTextColor(color: MaterialColor, editText: TextView?) {
         try {
-            val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
+            val editTextLocal = (editText ?: editor) as CustomEditText
 
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea?.let { selection ->
@@ -317,7 +346,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     @Suppress("UNCHECKED_CAST")
     fun updateTextStyle(style: EditorTextStyle, editText: TextView?) {
         try {
-            val editTextLocal = (editText ?: editorCore.activeView) as CustomEditText
+            val editTextLocal = (editText ?: editor) as CustomEditText
 
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea?.let { selection ->
@@ -597,10 +626,17 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         return color
     }
 
-    private fun insertSpecialSpan(textToDisplay: String, span: CharacterStyle) {
-        try {
-            val editor = editorCore.activeView as CustomEditText
+    private fun insertTag(tagText: String, addSpace: Boolean) =
+        insertSpecialSpan("#$tagText", TagSpan(tagText, specialSpansColors), addSpace)
 
+    private fun insertMention(userName: String, addSpace: Boolean) =
+        insertSpecialSpan("@$userName", MentionSpan(userName, specialSpansColors), addSpace)
+
+    private fun insertLinkInText(text: String, url: String, addSpace: Boolean) =
+        insertSpecialSpan(text, LinkSpan(url, specialSpansColors), addSpace)
+
+    private fun insertSpecialSpan(textToDisplay: String, span: CharacterStyle, addSpace: Boolean) {
+        try {
             if(editor.selectionArea != null) {
                 return
             }
@@ -611,7 +647,9 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                 val startPosition = editor.cursorPosition
                 val endPosition = editor.cursorPosition+textToDisplay.length
 
-                textArea.insert(editor.cursorPosition, "$textToDisplay ")
+                val suffix = if(addSpace) " " else ""
+
+                textArea.insert(editor.cursorPosition, "$textToDisplay$suffix")
 
                 editor.post {
                     spansWorker.createSpan(span, startPosition..endPosition)
@@ -622,4 +660,35 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         }
     }
 
+    /**
+     * Removes special span under a cursor position
+     */
+    private fun removeSpecialSpan(spanType: KClass<*>): Boolean {
+        try {
+            if(editor.selectionArea != null) {
+                return false
+            }
+
+            editor.text?.let { textArea ->
+                val spansWorker = SpansWorkerImpl(textArea)
+
+                spansWorker.getSpanUnderPosition(spanType, editor.cursorPosition)
+                    ?.let { span ->
+                        val spanInterval = spansWorker.getSpanInterval(span)
+
+                        spansWorker.removeSpan(span)
+
+                        editor.post {
+                            textArea.delete(spanInterval.first, spanInterval.last)
+                        }
+
+                        return true
+                    }
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+
+        return false
+    }
 }

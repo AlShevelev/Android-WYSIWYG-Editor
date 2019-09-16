@@ -206,6 +206,18 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
         inputExtensions!!.insertLinkInText("Google", "https://www.google.com")
     }
 
+    fun editTag() {
+        inputExtensions!!.editTag("blah_blah")
+    }
+
+    fun editMention() {
+        inputExtensions!!.editMention("suvorov")
+    }
+
+    fun editLinkInText() {
+        inputExtensions!!.editLinkInText("Yandex", "https://yandex.ru")
+    }
+
     /*
          *
          * Divider extension

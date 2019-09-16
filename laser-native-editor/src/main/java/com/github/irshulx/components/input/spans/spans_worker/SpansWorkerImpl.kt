@@ -32,4 +32,13 @@ class SpansWorkerImpl(text: CharSequence?) : SpansWorker {
 
     override fun createSpan(span: CharacterStyle, interval: IntRange) =
         spannableString.setSpan(span, interval.first, interval.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+
+    /**
+     * @return null - a span is not found
+     */
+    override fun getSpanUnderPosition(spanType: KClass<*>, cursorPosition: Int): CharacterStyle? =
+        spannableString.getSpans(cursorPosition, cursorPosition, spanType.java).firstOrNull() as? CharacterStyle
+
+    override fun getSpanInterval(span: CharacterStyle): IntRange =
+            spannableString.getSpanStart(span)..spannableString.getSpanEnd(span)
 }
