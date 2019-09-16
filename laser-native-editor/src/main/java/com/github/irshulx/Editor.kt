@@ -6,6 +6,7 @@ import android.text.Editable
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.View
+import com.github.irshulx.components.input.LinkInfo
 
 import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.models.EditorTextStyle
@@ -203,7 +204,7 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
     }
 
     fun insertLinkInText() {
-        inputExtensions!!.insertLinkInText("Google", "https://www.google.com")
+        inputExtensions!!.insertLinkInText(LinkInfo("Google", "https://www.google.com"))
     }
 
     fun editTag() {
@@ -215,7 +216,7 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
     }
 
     fun editLinkInText() {
-        inputExtensions!!.editLinkInText("Yandex", "https://yandex.ru")
+        inputExtensions!!.editLinkInText(LinkInfo("Yandex", "https://yandex.ru"))
     }
 
     /*

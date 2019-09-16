@@ -124,7 +124,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
     fun insertMention(userName: String) = insertMention(userName, true)
 
-    fun insertLinkInText(text: String, url: String) = insertLinkInText(text, url, true)
+    fun insertLinkInText(link: LinkInfo) = insertLinkInText(link.text, link.url, true)
 
     fun editTag(tagText: String) {
         if(removeSpecialSpan(TagSpan::class)) {
@@ -142,13 +142,35 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         }
     }
 
-    fun editLinkInText(text: String, url: String) {
+    fun editLinkInText(link: LinkInfo) {
         if(removeSpecialSpan(LinkSpan::class)) {
             editor.post {
-                insertLinkInText(text, url, false)
+                insertLinkInText(link.text, link.url, false)
             }
         }
     }
+
+    /**
+     * Tries to find a tag under a cursor and gets a value of it
+     */
+    fun tryGetTextOfTag(): String? = getSpecialSpanData(TagSpan::class) {
+        (it as TagSpan).value
+    }?.second
+
+    /**
+     * Tries to find a mention under a cursor and gets a value of it
+     */
+    fun tryGetTextOfMention(): String? = getSpecialSpanData(MentionSpan::class) {
+        (it as MentionSpan).value
+    }?.second
+
+    /**
+     * Tries to find a link under a cursor and gets a value of it
+     */
+    fun tryGetLinkInTextInfo(): LinkInfo? = getSpecialSpanData(LinkSpan::class) {
+        (it as LinkSpan).value
+    }
+    ?.let { LinkInfo(it.first, it.second) }
 
     @Suppress("UNCHECKED_CAST")
     fun updateTextColor(color: MaterialColor, editText: TextView?) {
@@ -635,6 +657,9 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     private fun insertLinkInText(text: String, url: String, addSpace: Boolean) =
         insertSpecialSpan(text, LinkSpan(url, specialSpansColors), addSpace)
 
+    /**
+     * Inserts special span into a cursor position
+     */
     private fun insertSpecialSpan(textToDisplay: String, span: CharacterStyle, addSpace: Boolean) {
         try {
             if(editor.selectionArea != null) {
@@ -690,5 +715,35 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         }
 
         return false
+    }
+
+    /**
+     * Get data of a special span under a cursor
+     * @return a pair with display text and value (or null if a span is not found)
+     */
+    private fun <T>getSpecialSpanData(spanType: KClass<*>, getValueAction: (CharacterStyle) -> T): Pair<String, T>? {
+        try {
+            if(editor.selectionArea != null) {
+                return null
+            }
+
+            editor.text?.let { textArea ->
+                val spansWorker = SpansWorkerImpl(textArea)
+
+                spansWorker.getSpanUnderPosition(spanType, editor.cursorPosition)
+                    ?.let { span ->
+                        val spanInterval = spansWorker.getSpanInterval(span)
+
+                        val displayText = textArea.subSequence(spanInterval.first, spanInterval.last).toString()
+                        val value = getValueAction(span)
+
+                        return Pair(displayText, value)
+                    }
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+
+        return null
     }
 }
