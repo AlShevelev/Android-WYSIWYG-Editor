@@ -5,10 +5,12 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Handler
 import android.text.*
-import android.text.style.CharacterStyle
+import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
+import android.text.style.UnderlineSpan
 import android.text.util.Linkify
+import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
@@ -25,10 +27,13 @@ import com.github.irshulx.R
 import com.github.irshulx.components.ComponentsWrapper
 import com.github.irshulx.components.ListItemExtensions
 import com.github.irshulx.components.input.edit_text.CustomEditText
-import com.github.irshulx.components.input.spans.ColorSpansCalculator
-import com.github.irshulx.components.input.spans.CreateSpanOperation
-import com.github.irshulx.components.input.spans.DeleteSpanOperation
-import com.github.irshulx.components.input.spans.StyleSpansCalculator
+import com.github.irshulx.components.input.spans.calculators.ColorSpansCalculator
+import com.github.irshulx.components.input.spans.calculators.CreateSpanOperation
+import com.github.irshulx.components.input.spans.calculators.DeleteSpanOperation
+import com.github.irshulx.components.input.spans.calculators.StyleSpansCalculator
+import com.github.irshulx.components.input.spans.custom.TagSpan
+import com.github.irshulx.components.input.spans.spans_worker.SpansWorker
+import com.github.irshulx.components.input.spans.spans_worker.SpansWorkerImpl
 import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.InputMetadata
 import com.github.irshulx.utilities.FontCache
@@ -114,18 +119,18 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea?.let { selection ->
-                val spannableString = editTextLocal.text as SpannableStringBuilder
+                val spansWorker = SpansWorkerImpl(editTextLocal.text)
 
-                val calculator = ColorSpansCalculator(spannableString)
+                val calculator = ColorSpansCalculator(spansWorker)
                 val spanOperations = calculator.calculate(selection, MaterialColor.toSystemColor(color, editTextLocal.context))
 
                 spanOperations.forEach { operation ->
                     when(operation) {
-                        is DeleteSpanOperation -> spannableString.removeSpan(operation.span)
+                        is DeleteSpanOperation -> spansWorker.removeSpan(operation.span)
 
                         is CreateSpanOperation<*> -> {
                             with((operation as CreateSpanOperation<Int>).spanInfo) {
-                                spannableString.setSpan(ForegroundColorSpan(value), area.first, area.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+                                spansWorker.createSpan(ForegroundColorSpan(value), area)
                             }
                         }
                     }
@@ -174,8 +179,12 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         editText.addTextChangedListener(object : TextWatcher {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
 
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int,
-                                           after: Int) {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+                val spansWorker = SpansWorkerImpl(s)
+                val spans = spansWorker.getSpans<TagSpan>(TagSpan::class, start..start+count)
+
+                // If a span is edited by user we should remove it
+                spans.forEach { spansWorker.removeSpan(it) }
             }
 
             override fun afterTextChanged(s: Editable) {
@@ -297,19 +306,18 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
             // Process the operation only if a selection area exists
             editTextLocal.selectionArea?.let { selection ->
-                val spannableString = editTextLocal.text as SpannableStringBuilder
+                val spansWorker = SpansWorkerImpl(editTextLocal.text)
 
-                val calculator = StyleSpansCalculator(spannableString)
+                val calculator = StyleSpansCalculator(spansWorker)
                 val spanOperations = calculator.calculate(selection, style)
 
                 spanOperations.forEach { operation ->
                     when(operation) {
-                        is DeleteSpanOperation -> spannableString.removeSpan(operation.span)
+                        is DeleteSpanOperation -> spansWorker.removeSpan(operation.span)
 
                         is CreateSpanOperation<*> -> {
                             with((operation as CreateSpanOperation<EditorTextStyle>).spanInfo) {
-                                spannableString.setSpan(
-                                    StyleSpan(styleToTypeface(value)), area.first, area.last, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+                                spansWorker.createSpan(StyleSpan(styleToTypeface(value)), area)
                             }
                         }
                     }

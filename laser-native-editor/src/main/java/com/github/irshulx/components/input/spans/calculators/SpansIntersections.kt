@@ -1,4 +1,4 @@
-package com.github.irshulx.components.input.spans
+package com.github.irshulx.components.input.spans.calculators
 
 class SpansIntersections<T>() {
     val spansIntersectFull = mutableListOf<SpanInfo<T>>()

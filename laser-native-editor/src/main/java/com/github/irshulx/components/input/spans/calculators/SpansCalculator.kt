@@ -1,11 +1,11 @@
-package com.github.irshulx.components.input.spans
+package com.github.irshulx.components.input.spans.calculators
 
-import android.text.SpannableStringBuilder
 import android.text.style.CharacterStyle
+import com.github.irshulx.components.input.spans.spans_worker.SpansWorkerRead
 import kotlin.reflect.KClass
 
 @Suppress("LeakingThis")
-abstract class SpansCalculator<T>(spannedText: SpannableStringBuilder) {
+abstract class SpansCalculator<T>(spansReader: SpansWorkerRead) {
     private val spans: List<SpanInfo<T>>
     private val spansInText: Map<SpanInfo<T>, CharacterStyle>
 
@@ -14,17 +14,9 @@ abstract class SpansCalculator<T>(spannedText: SpannableStringBuilder) {
         val spans = mutableListOf<SpanInfo<T>>()
         val spansInText = mutableMapOf<SpanInfo<T>, CharacterStyle>()
 
-        spannedText.getSpans(0, spannedText.length, getSpanClass().java)
-            .forEach { span ->
-                val value = getSpanValue(span)
-                val start = spannedText.getSpanStart(span)
-                val end = spannedText.getSpanEnd(span)
-
-                createSpanInfo(start..end, value)
-                    .let {
-                        spans.add(it)
-                        spansInText[it] = span as CharacterStyle
-                    }
+        spansReader.getSpansWithIntervals<CharacterStyle>(getSpanClass())
+            .map {
+                createSpanInfo(it.spanInterval, getSpanValue(it.span))
             }
 
         this.spans = spans

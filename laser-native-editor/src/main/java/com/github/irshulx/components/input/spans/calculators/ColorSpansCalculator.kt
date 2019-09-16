@@ -1,10 +1,10 @@
-package com.github.irshulx.components.input.spans
+package com.github.irshulx.components.input.spans.calculators
 
-import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
+import com.github.irshulx.components.input.spans.spans_worker.SpansWorkerRead
 import kotlin.reflect.KClass
 
-class ColorSpansCalculator(spannedText: SpannableStringBuilder): SpansCalculator<Int>(spannedText) {
+class ColorSpansCalculator(spansReader: SpansWorkerRead): SpansCalculator<Int>(spansReader) {
     fun calculate(area: IntRange, color: Int) = calculate(createSpanInfo(area, color))
 
     override fun calculateSpanValue(oldValue: Int, newValue: Int): Int? = newValue

@@ -1,6 +1,5 @@
-package com.github.irshulx.components.input.spans
+package com.github.irshulx.components.input.spans.calculators
 
-import android.text.style.CharacterStyle
 import com.github.irshulx.models.EditorTextStyle
 
 abstract class SpanInfo<T> (val area: IntRange, val value: T)

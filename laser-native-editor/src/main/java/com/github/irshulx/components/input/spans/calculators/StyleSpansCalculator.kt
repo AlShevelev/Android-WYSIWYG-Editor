@@ -1,13 +1,12 @@
-package com.github.irshulx.components.input.spans
+package com.github.irshulx.components.input.spans.calculators
 
 import android.graphics.Typeface
-import android.text.SpannableStringBuilder
 import android.text.style.StyleSpan
+import com.github.irshulx.components.input.spans.spans_worker.SpansWorkerRead
 import com.github.irshulx.models.EditorTextStyle
-import java.lang.UnsupportedOperationException
 import kotlin.reflect.KClass
 
-class StyleSpansCalculator(spannedText: SpannableStringBuilder) : SpansCalculator<EditorTextStyle>(spannedText) {
+class StyleSpansCalculator(spansReader: SpansWorkerRead) : SpansCalculator<EditorTextStyle>(spansReader) {
     fun calculate(area: IntRange, style: EditorTextStyle) =
         if(style == EditorTextStyle.BOLD || style == EditorTextStyle.ITALIC) {
             calculate(createSpanInfo(area, style))
@@ -40,7 +39,7 @@ class StyleSpansCalculator(spannedText: SpannableStringBuilder) : SpansCalculato
     override fun SpanInfo<EditorTextStyle>.copy(newValue: EditorTextStyle): SpanInfo<EditorTextStyle> = StyleSpanInfo(area, newValue)
 
     override fun createSpanInfo(area: IntRange, newValue: EditorTextStyle): SpanInfo<EditorTextStyle> =
-        StyleSpanInfo(area, newValue)
+            StyleSpanInfo(area, newValue)
 
     override fun getSpanClass(): KClass<*> = StyleSpan::class
 

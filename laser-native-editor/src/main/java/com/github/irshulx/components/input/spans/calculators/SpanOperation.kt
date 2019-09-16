@@ -1,4 +1,4 @@
-package com.github.irshulx.components.input.spans
+package com.github.irshulx.components.input.spans.calculators
 
 import android.text.style.CharacterStyle
 
