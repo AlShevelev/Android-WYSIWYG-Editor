@@ -194,6 +194,17 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
         inputExtensions!!.appendText(text)
     }
 
+    fun insertTag() {
+        inputExtensions!!.insertTag("mutin_pudak")
+    }
+
+    fun insertMention() {
+        inputExtensions!!.insertMention("barklay")
+    }
+
+    fun insertLinkInText() {
+        inputExtensions!!.insertLinkInText("Google", "https://www.google.com")
+    }
 
     /*
          *

@@ -19,6 +19,11 @@ constructor(
     val selectionArea: IntRange?
         get() = if(selectionStart != selectionEnd) selectionStart .. selectionEnd else null
 
+    val cursorPosition: Int
+        get() = selectionStart
+
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection =
             CustomInputConnection(this, super.onCreateInputConnection(outAttrs), true)
+
+    fun setCursorPosition(position: Int) = setSelection(position)
 }

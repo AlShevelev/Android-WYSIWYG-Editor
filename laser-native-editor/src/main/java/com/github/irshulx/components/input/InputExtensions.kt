@@ -5,12 +5,10 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Handler
 import android.text.*
-import android.text.style.BackgroundColorSpan
+import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
-import android.text.style.UnderlineSpan
 import android.text.util.Linkify
-import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +16,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.ColorInt
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.content.ContextCompat
@@ -31,8 +30,9 @@ import com.github.irshulx.components.input.spans.calculators.ColorSpansCalculato
 import com.github.irshulx.components.input.spans.calculators.CreateSpanOperation
 import com.github.irshulx.components.input.spans.calculators.DeleteSpanOperation
 import com.github.irshulx.components.input.spans.calculators.StyleSpansCalculator
+import com.github.irshulx.components.input.spans.custom.LinkSpan
+import com.github.irshulx.components.input.spans.custom.MentionSpan
 import com.github.irshulx.components.input.spans.custom.TagSpan
-import com.github.irshulx.components.input.spans.spans_worker.SpansWorker
 import com.github.irshulx.components.input.spans.spans_worker.SpansWorkerImpl
 import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.InputMetadata
@@ -54,6 +54,9 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     var contentTypeface: Map<Int, String>? = null
     var headingTypeface: Map<Int, String>? = null
     private var lineSpacing = -1f
+
+    @ColorInt
+    private val specialSpansColors = Color.BLUE
 
     fun getFontFace(): String {
         return editorCore.context.resources.getString(fontFace)
@@ -111,6 +114,12 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         val toReplace = GetSanitizedHtml(text)
         textView.text = toReplace
     }
+
+    fun insertTag(tagText: String) = insertSpecialSpan("#$tagText", TagSpan(tagText, specialSpansColors))
+
+    fun insertMention(userName: String) = insertSpecialSpan("@$userName", MentionSpan(userName, specialSpansColors))
+
+    fun insertLinkInText(text: String, url: String) = insertSpecialSpan(text, LinkSpan(url, specialSpansColors))
 
     @Suppress("UNCHECKED_CAST")
     fun updateTextColor(color: MaterialColor, editText: TextView?) {
@@ -181,10 +190,16 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
                 val spansWorker = SpansWorkerImpl(s)
-                val spans = spansWorker.getSpans<TagSpan>(TagSpan::class, start..start+count)
 
                 // If a span is edited by user we should remove it
-                spans.forEach { spansWorker.removeSpan(it) }
+                val tagsSpans = spansWorker.getSpans<TagSpan>(TagSpan::class, start..start+count)
+                tagsSpans.forEach { spansWorker.removeSpan(it) }
+
+                val mentionsSpans = spansWorker.getSpans<MentionSpan>(MentionSpan::class, start..start+count)
+                mentionsSpans.forEach { spansWorker.removeSpan(it) }
+
+                val linksSpans = spansWorker.getSpans<LinkSpan>(LinkSpan::class, start..start+count)
+                linksSpans.forEach { spansWorker.removeSpan(it) }
             }
 
             override fun afterTextChanged(s: Editable) {
@@ -581,4 +596,30 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         }
         return color
     }
+
+    private fun insertSpecialSpan(textToDisplay: String, span: CharacterStyle) {
+        try {
+            val editor = editorCore.activeView as CustomEditText
+
+            if(editor.selectionArea != null) {
+                return
+            }
+
+            editor.text?.let { textArea ->
+                val spansWorker = SpansWorkerImpl(textArea)
+
+                val startPosition = editor.cursorPosition
+                val endPosition = editor.cursorPosition+textToDisplay.length
+
+                textArea.insert(editor.cursorPosition, "$textToDisplay ")
+
+                editor.post {
+                    spansWorker.createSpan(span, startPosition..endPosition)
+                }
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+    }
+
 }

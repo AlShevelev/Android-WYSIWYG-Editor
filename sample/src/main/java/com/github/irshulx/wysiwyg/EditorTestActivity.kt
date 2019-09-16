@@ -97,8 +97,12 @@ class EditorTestActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.action_insert_link).setOnClickListener { editor.insertLink() }
 
-
         findViewById<View>(R.id.action_erase).setOnClickListener { editor.clearAllContents() }
+
+        findViewById<View>(R.id.action_tag).setOnClickListener { editor.insertTag() }
+        findViewById<View>(R.id.action_mention).setOnClickListener { editor.insertMention() }
+        findViewById<View>(R.id.action_link_in_text).setOnClickListener { editor.insertLinkInText() }
+
         //editor.dividerBackground=R.drawable.divider_background_dark;
         //editor.setFontFace(R.string.fontFamily__serif);
         val headingTypeface = headingTypeface

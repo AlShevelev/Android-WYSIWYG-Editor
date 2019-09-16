@@ -113,4 +113,31 @@
         android:maxHeight="20dp"
         android:maxWidth="20dp"
         android:src="@drawable/icon_erase" />
+
+    <ImageButton
+        android:id="@+id/action_tag"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@android:color/transparent"
+        android:maxHeight="20dp"
+        android:maxWidth="20dp"
+        android:src="@drawable/icon_erase" />
+
+    <ImageButton
+        android:id="@+id/action_mention"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@android:color/transparent"
+        android:maxHeight="20dp"
+        android:maxWidth="20dp"
+        android:src="@drawable/icon_erase" />
+
+    <ImageButton
+        android:id="@+id/action_link_in_text"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@android:color/transparent"
+        android:maxHeight="20dp"
+        android:maxWidth="20dp"
+        android:src="@drawable/icon_erase" />
 </LinearLayout>
