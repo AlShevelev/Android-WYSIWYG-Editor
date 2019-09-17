@@ -53,8 +53,4 @@ constructor(
                 }
         }
     }
-
-    fun setOnColorChangeListener(listener: ((MaterialColor) -> Unit)?) {
-        onColorChangeListener = listener
-    }
 }

@@ -1,16 +1,12 @@
 package com.github.irshulx.components
 
-import com.github.irshulx.EditorCore
 import com.github.irshulx.models.EditorType
 import com.github.irshulx.models.HtmlTag
-
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Tag
-import java.lang.UnsupportedOperationException
+import java.util.*
 
-import java.util.HashMap
-
-class HTMLExtensions(internal var editorCore: EditorCore) {
+class HTMLExtensions {
     companion object {
         fun matchesTag(test: String): Boolean {
             for (tag in HtmlTag.values()) {
@@ -52,10 +48,6 @@ class HTMLExtensions(internal var editorCore: EditorCore) {
         el.attributes().put("style", element.attr("style"))
         el.html(element.html())
         return el.toString()
-    }
-
-    private fun hasChildren(element: Element): Boolean {
-        return element.allElements.size > 0
     }
 
     fun getTemplateHtml(child: EditorType): String =

@@ -19,8 +19,10 @@ import com.github.irshulx.models.control_metadata.ImageMetadata
 
 import org.jsoup.nodes.Element
 
-class DividerExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
-    private var dividerLayout = R.layout.tmpl_divider_layout
+class DividerExtensions(
+    private var editorCore: EditorCore
+) : EditorComponent(editorCore) {
+    private var dividerLayout = R.layout.widget_divider
 
     override fun getContent(view: View): Node {
         return getNodeInstance(view)
@@ -49,33 +51,36 @@ class DividerExtensions(internal var editorCore: EditorCore) : EditorComponent(e
     }
 
     fun insertDivider(index: Int) {
-        var index = index
+        var determinateIndex = index
+
         val view = (editorCore.context as Activity).layoutInflater.inflate(this.dividerLayout, null)
         view.tag = ImageMetadata(EditorType.HR)
-        if (index == -1) {
-            index = editorCore.determineIndex(EditorType.HR)
+
+        if (determinateIndex == -1) {
+            determinateIndex = editorCore.determineIndex(EditorType.HR)
         }
-        if (index == 0) {
+        if (determinateIndex == 0) {
             Toast.makeText(editorCore.context, "divider cannot be inserted on line zero", Toast.LENGTH_SHORT).show()
             return
         }
-        editorCore.parentView!!.addView(view, index)
+        editorCore.parentView!!.addView(view, determinateIndex)
 
         if (editorCore.renderType === RenderType.EDITOR) {
 
-            if (editorCore.getControlType(editorCore.parentView!!.getChildAt(index + 1)) === EditorType.INPUT) {
-                val customEditText = editorCore.getChildAt(index + 1) as CustomEditText
+            if (editorCore.getControlType(editorCore.parentView!!.getChildAt(determinateIndex + 1)) === EditorType.INPUT) {
+                val customEditText = editorCore.getChildAt(determinateIndex + 1) as CustomEditText
                 componentsWrapper!!.inputExtensions!!.removeFocus(customEditText)
             }
-            view.setOnTouchListener(View.OnTouchListener { view, event ->
+
+            view.setOnTouchListener(View.OnTouchListener { touchView, event ->
                 if (event.action == MotionEvent.ACTION_UP) {
-                    val paddingTop = view.paddingTop
-                    val paddingBottom = view.paddingBottom
-                    val height = view.height
+                    val paddingTop = touchView.paddingTop
+                    val paddingBottom = touchView.paddingBottom
+                    val height = touchView.height
                     if (event.y < paddingTop) {
-                        editorCore.___onViewTouched(0, editorCore.parentView!!.indexOfChild(view))
+                        editorCore.onViewTouched(0, editorCore.parentView!!.indexOfChild(touchView))
                     } else if (event.y > height - paddingBottom) {
-                        editorCore.___onViewTouched(1, editorCore.parentView!!.indexOfChild(view))
+                        editorCore.onViewTouched(1, editorCore.parentView!!.indexOfChild(touchView))
                     }
                     return@OnTouchListener false
                 }
@@ -94,15 +99,6 @@ class DividerExtensions(internal var editorCore: EditorCore) : EditorComponent(e
             }
 
         }
-    }
-
-    fun deleteHr(indexOfDeleteItem: Int): Boolean {
-        val view = editorCore.parentView!!.getChildAt(indexOfDeleteItem)
-        if (view == null || editorCore.getControlType(view) === EditorType.HR) {
-            editorCore.parentView!!.removeView(view)
-            return true
-        }
-        return false
     }
 
     fun removeAllDividersBetweenDeletedAndFocusNext(indexOfDeleteItem: Int, nextFocusIndex: Int) {

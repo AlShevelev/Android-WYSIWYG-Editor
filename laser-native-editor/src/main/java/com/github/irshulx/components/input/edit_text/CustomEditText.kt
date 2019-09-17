@@ -24,6 +24,4 @@ constructor(
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection =
             CustomInputConnection(this, super.onCreateInputConnection(outAttrs), true)
-
-    fun setCursorPosition(position: Int) = setSelection(position)
 }

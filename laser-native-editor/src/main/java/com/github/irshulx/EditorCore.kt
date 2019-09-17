@@ -1,5 +1,6 @@
 package com.github.irshulx
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.res.Resources
@@ -20,8 +21,6 @@ import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.components.input.InputExtensions
 import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.ControlMetadata
-import com.github.irshulx.models.control_metadata.InputMetadata
-import com.github.irshulx.models.control_metadata.ListItemMetadata
 import com.github.irshulx.models.Node
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -29,12 +28,11 @@ import java.util.*
 
 open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(context, attrs), View.OnTouchListener {
     companion object {
-        val TAG = "EDITOR"
+        const val TAG = "EDITOR"
+        const val PICK_IMAGE_REQUEST = 1
     }
 
     open var editorListener: EditorListener? = null
-    private val MAP_MARKER_REQUEST = 20
-    val PICK_IMAGE_REQUEST = 1
 
     /*
      * Getters and setters for  extensions
@@ -45,35 +43,18 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
     protected var imageExtensions: ImageExtensions? = null
         private set
 
-    protected var listItemExtensions: ListItemExtensions? = null
-        private set
-
     protected var dividerExtensions: DividerExtensions? = null
         private set
 
-    protected var htmlExtensions: HTMLExtensions? = null
+    private var htmlExtensions: HTMLExtensions? = null
         private set
 
-    protected var mapExtensions: MapExtensions? = null
-        private set
-
-    protected var macroExtensions: MacroExtensions? = null
-        private set
-
-    private val editorSettings: EditorSettings
+    private val editorSettings: EditorSettings = EditorSettings.init(context, this)
 
     private var componentsWrapper: ComponentsWrapper? = null
 
-
-    //region Getters_and_Setters
-
-    /**
-     * Exposed
-     */
-
     /**
      * returns activity
-     *
      * @return
      */
     val activity: Activity
@@ -81,7 +62,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
 
     /**
      * used to get the editor node
-     *
      * @return
      */
     val parentView: LinearLayout?
@@ -89,7 +69,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
 
     /**
      * Get number of childs in the editor
-     *
      * @return
      */
     val parentChildCount: Int
@@ -97,7 +76,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
 
     /**
      * returns whether editor is set as Editor or Rendeder
-     *
      * @return
      */
     val renderType: RenderType?
@@ -105,7 +83,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
 
     /**
      * The current active view on the editor
-     *
      * @return
      */
     var activeView: View?
@@ -113,11 +90,9 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         set(view) {
             this.editorSettings.activeView = view
         }
-    //endregion
 
-
-    /*
-    Used by Editor
+    /**
+     * Used by Editor
      */
     protected open val contentAsSerialized: String
         get() {
@@ -126,8 +101,7 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         }
 
 
-    protected open//field type, content[]
-    val content: EditorContent?
+    protected open val content: EditorContent?
         get() {
             if (this.editorSettings.renderType === RenderType.RENDERER) {
                 Utilities.toastItOut(this.context, "This option only available in editor mode")
@@ -153,19 +127,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
                         node = dividerExtensions!!.getContent(view)
                         list.add(node)
                     }
-                    EditorType.UL, EditorType.OL -> {
-                        node = listItemExtensions!!.getContent(view)
-                        list.add(node)
-                    }
-                    EditorType.MAP -> {
-                        node = mapExtensions!!.getContent(view)
-                        list.add(node)
-                    }
-                    EditorType.MACRO -> {
-                        node = macroExtensions!!.getContent(view)
-                        list.add(node)
-                    }
-
                     else -> {}
                 }
             }
@@ -185,22 +146,15 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
             this.editorSettings.stateFresh = stateFresh
         }
 
-    var isSerialRenderInProgress: Boolean
-        get() = this.editorSettings.serialRenderInProgress
-        set(serialRenderInProgress) {
-            this.editorSettings.serialRenderInProgress = serialRenderInProgress
-        }
-
 
     val placeHolder: String?
         get() = editorSettings.placeHolder
 
-    val autoFucus: Boolean
+    val autoFocus: Boolean
         get() = editorSettings.autoFocus
 
     init {
-        editorSettings = EditorSettings.init(context, this)
-        this.orientation = LinearLayout.VERTICAL
+        this.orientation = VERTICAL
         initialize(attrs)
         onPostInit()
     }
@@ -215,67 +169,41 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         loadStateFromAttrs(attrs)
         inputExtensions = InputExtensions(this)
         imageExtensions = ImageExtensions(this)
-        listItemExtensions = ListItemExtensions(this)
         dividerExtensions = DividerExtensions(this)
-        mapExtensions = MapExtensions(this)
-        htmlExtensions = HTMLExtensions(this)
-        macroExtensions = MacroExtensions(this)
+        htmlExtensions = HTMLExtensions()
 
         componentsWrapper = ComponentsWrapper.Builder()
-                .inputExtensions(inputExtensions!!)
-                .htmlExtensions(htmlExtensions!!)
-                .dividerExtensions(dividerExtensions!!)
-                .imageExtensions(imageExtensions!!)
-                .listItemExtensions(listItemExtensions!!)
-                .macroExtensions(macroExtensions!!)
-                .mapExtensions(mapExtensions!!)
-                .build()
+            .inputExtensions(inputExtensions!!)
+            .htmlExtensions(htmlExtensions!!)
+            .dividerExtensions(dividerExtensions!!)
+            .imageExtensions(imageExtensions!!)
+            .build()
 
-        macroExtensions!!.init(componentsWrapper!!)
         dividerExtensions!!.init(componentsWrapper!!)
         inputExtensions!!.init(componentsWrapper!!)
         imageExtensions!!.init(componentsWrapper!!)
-        listItemExtensions!!.init(componentsWrapper!!)
-        mapExtensions!!.init(componentsWrapper!!)
     }
 
 
-    fun ___onViewTouched(hotspot: Int, viewPosition: Int) {
+    fun onViewTouched(hotspot: Int, viewPosition: Int) {
         if (hotspot == 0) {
             if (!inputExtensions!!.isInputTextAtPosition(viewPosition - 1)) {
-                inputExtensions!!.insertEditText(viewPosition, null, null)
+                inputExtensions!!.insertEditText(viewPosition, null)
             } else {
                 Log.d(TAG, "not adding another edittext since already an edittext on the top")
             }
         } else if (hotspot == 1) {
             if (!inputExtensions!!.isInputTextAtPosition(viewPosition + 1)) {
-                inputExtensions!!.insertEditText(viewPosition + 1, null, null)
+                inputExtensions!!.insertEditText(viewPosition + 1, null)
             } else {
                 Log.d(TAG, "not adding another edittext since already an edittext below")
             }
         }
     }
 
-    fun ___onViewTouched(view: View, motionEvent: MotionEvent) {
-        var position = -1
-        for (i in 0 until childCount) {
-            val withinBound = isViewInBounds(getChildAt(i), motionEvent.x, motionEvent.y)
-            if (withinBound) {
-                position = i
-            }
-        }
-
-        if (position == -1) {
-            var doInsert = true
-            if (getControlType(getChildAt(childCount - 1)) === EditorType.INPUT) {
-                val editText = getChildAt(childCount - 1) as CustomEditText
-                if (TextUtils.isEmpty(editText.text)) {
-                    doInsert = false
-                }
-            }
-            if (doInsert)
-                inputExtensions!!.insertEditText(childCount, null, null)
-        }
+    override fun onTouch(view: View, motionEvent: MotionEvent): Boolean {
+        onViewTouched(motionEvent)
+        return false
     }
 
     private fun isViewInBounds(view: View, x: Float, y: Float): Boolean {
@@ -302,11 +230,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         return editorSettings.gson.fromJson(EditorContentSerialized, EditorContent::class.java)
     }
 
-    protected fun serializeContent(_state: EditorContent?): String {
-        return editorSettings.gson.toJson(_state)
-    }
-
-
     protected fun renderEditor(_state: EditorContent) {
         this.editorSettings.parentView!!.removeAllViews()
         this.editorSettings.serialRenderInProgress = true
@@ -315,42 +238,18 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
                 EditorType.INPUT -> inputExtensions!!.renderEditorFromState(item, _state)
                 EditorType.HR -> dividerExtensions!!.renderEditorFromState(item, _state)
                 EditorType.IMG -> imageExtensions!!.renderEditorFromState(item, _state)
-                EditorType.UL, EditorType.OL -> listItemExtensions!!.renderEditorFromState(item, _state)
-                EditorType.MAP -> mapExtensions!!.renderEditorFromState(item, _state)
-                EditorType.MACRO -> macroExtensions!!.renderEditorFromState(item, _state)
                 else -> {}
             }
         }
         this.editorSettings.serialRenderInProgress = false
     }
 
-    protected fun parseHtml(htmlString: String) {
-        val doc = Jsoup.parse(htmlString)
-        for (element in doc.body().children()) {
-            if (!HTMLExtensions.matchesTag(element.tagName().toLowerCase())) {
-                val tag = element.attr("data-tag")
-                if (tag != "macro") {
-                    continue
-                }
-            }
-            buildNodeFromHTML(element)
-        }
-    }
-
     private fun buildNodeFromHTML(element: Element) {
-        val text: String
-
-        val macroTag = element.attr("data-tag")
-        if (macroTag == "macro") {
-            macroExtensions!!.buildNodeFromHTML(element)
-            return
-        }
-
-        val tag = HtmlTag.valueOf(element.tagName().toLowerCase())
+        val tag = HtmlTag.valueOf(element.tagName().toLowerCase(Locale.ROOT))
         val count = parentView!!.childCount
 
         if ("br" == tag.name || "<br>" == element.html().replace("\\s+".toRegex(), "") || "<br/>" == element.html().replace("\\s+".toRegex(), "")) {
-            inputExtensions!!.insertEditText(count, null, null)
+            inputExtensions!!.insertEditText(count, null)
             return
         } else if ("hr" == tag.name || "<hr>" == element.html().replace("\\s+".toRegex(), "") || "<hr/>" == element.html().replace("\\s+".toRegex(), "")) {
             dividerExtensions!!.buildNodeFromHTML(element)
@@ -358,8 +257,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
         }
 
         when (tag) {
-            HtmlTag.h1, HtmlTag.h2, HtmlTag.h3, HtmlTag.p, HtmlTag.blockquote -> inputExtensions!!.buildNodeFromHTML(element)
-            HtmlTag.ul, HtmlTag.ol -> listItemExtensions!!.buildNodeFromHTML(element)
             HtmlTag.img -> imageExtensions!!.buildNodeFromHTML(element)
             HtmlTag.div -> {
                 val dataTag = element.attr("data-tag")
@@ -387,13 +284,6 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
                     htmlBlock.append(imgHtml)
                 }
                 EditorType.HR -> htmlBlock.append(dividerExtensions!!.getContentAsHTML(item, content))
-                EditorType.MAP -> {
-                    val htmlMap = mapExtensions!!.getContentAsHTML(item, content)
-                    htmlBlock.append(htmlMap)
-                }
-                EditorType.UL, EditorType.OL -> htmlBlock.append(listItemExtensions!!.getContentAsHTML(item, content))
-                EditorType.MACRO -> htmlBlock.append(macroExtensions!!.getContentAsHTML(item, content))
-
                 else -> {}
             }
         }
@@ -418,6 +308,7 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
     }
 
 
+    @SuppressLint("CustomViewStyleable")
     private fun loadStateFromAttrs(attributeSet: AttributeSet?) {
         if (attributeSet == null) {
             return  // quick exit
@@ -430,9 +321,15 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
             this.editorSettings.autoFocus = a.getBoolean(R.styleable.editor_auto_focus, true)
             val renderType = a.getString(R.styleable.editor_render_type)
             if (TextUtils.isEmpty(renderType)) {
-                this.editorSettings.renderType = com.github.irshulx.models.RenderType.EDITOR
+                this.editorSettings.renderType = RenderType.EDITOR
             } else {
-                this.editorSettings.renderType = if (renderType!!.toLowerCase() == "renderer") RenderType.RENDERER else RenderType.EDITOR
+                this.editorSettings.renderType =
+                    if (renderType!!.toLowerCase(Locale.ROOT) == "renderer") {
+                        RenderType.RENDERER
+                    }
+                    else {
+                        RenderType.EDITOR
+                    }
             }
 
         } finally {
@@ -448,11 +345,14 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
      */
     fun determineIndex(type: EditorType): Int {
         val size = this.editorSettings.parentView!!.childCount
-        if (this.editorSettings.renderType === RenderType.RENDERER)
+        if (this.editorSettings.renderType === RenderType.RENDERER) {
             return size
-        val _view = this.editorSettings.activeView ?: return size
-        val currentIndex = this.editorSettings.parentView!!.indexOfChild(_view)
-        val tag = getControlType(_view)
+        }
+
+        val view = this.editorSettings.activeView ?: return size
+        val currentIndex = this.editorSettings.parentView!!.indexOfChild(view)
+        val tag = getControlType(view)
+
         if (tag === EditorType.INPUT) {
             val length = (this.editorSettings.activeView as EditText).text.length
             return if (length > 0) {
@@ -460,25 +360,8 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
             } else {
                 currentIndex
             }
-        } else if (tag === EditorType.UL_LI || tag === EditorType.OL_LI) {
-            val _text = _view.findViewById<EditText>(R.id.txtText)
-            if (_text.text.length > 0) {
-
-            }
-            return size
-        } else {
-            return size
         }
-    }
-
-    fun containsStyle(_Styles: List<EditorTextStyle>, style: EditorTextStyle): Boolean {
-        for (item in _Styles) {
-            if (item === style) {
-                return true
-            }
-            continue
-        }
-        return false
+        return size
     }
 
     fun getControlType(view: View?): EditorType? = view?.let { (it.tag as ControlMetadata).type }
@@ -491,29 +374,116 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
             return
         }
 
-        // If the person was on an active ul|li, move him to the previous node
-        ((view.parent as View).tag as? ControlMetadata)?.let { contentType ->
-            if (contentType.type === EditorType.OL_LI || contentType.type === EditorType.UL_LI) {
-                listItemExtensions!!.validateAndRemoveLisNode(view, contentType as ListItemMetadata)
-                return@deleteFocusedPrevious
-            }
-        }
+        removeParent(view)
+    }
 
-        val toFocus = this.editorSettings.parentView!!.getChildAt(index - 1)
-        val control = toFocus.tag as ControlMetadata
+    fun getStateFromString(content: String?): EditorContent {
+        var strContent = content
 
-         // If its an image or map, do not delete edittext, as there is nothing to focus on after image
-         // If the person was on edittext,  had removed the whole text, we need to move into the previous line
-        if (control.type === EditorType.OL || control.type === EditorType.UL) {
-            this.editorSettings.parentView!!.removeView(view)   // previous node on the editor is a list, set focus to its inside
-            listItemExtensions!!.setFocusToList(toFocus, ListItemExtensions.POSITION_END)
-        } else {
-            removeParent(view)
+        if (strContent == null) {
+            strContent = getValue("editorState", "")
         }
+        return editorSettings.gson.fromJson(strContent, EditorContent::class.java)
+    }
+
+    @Suppress("SameParameterValue")
+    private fun getValue(key: String, defaultVal: String): String? =
+        PreferenceManager.getDefaultSharedPreferences(this.context).getString(key, defaultVal)
+
+    private fun getNodeInstance(view: View): Node {
+        val node = Node()
+        val type = getControlType(view)
+        node.type = type
+        node.content = ArrayList()
+        return node
+    }
+
+    fun isLastRow(view: View): Boolean {
+        val index = this.editorSettings.parentView!!.indexOfChild(view)
+        val length = this.editorSettings.parentView!!.childCount
+        return length - 1 == index
     }
 
 
-    fun removeParent(view: View): Int {
+    @SuppressLint("SetTextI18n")
+    open fun onKey(v: View, keyCode: Int, event: KeyEvent, editText: CustomEditText): Boolean {
+        if (keyCode != KeyEvent.KEYCODE_DEL) {
+            return false
+        }
+        if (inputExtensions!!.isEditTextEmpty(editText)) {
+            deleteFocusedPrevious(editText)
+            val controlCount = parentChildCount
+            return if (controlCount == 1) checkLastControl() else false
+        }
+        val length = editText.text?.length ?: 0
+        val selectionStart = editText.selectionStart
+
+        val nextFocus: CustomEditText?
+        if (selectionStart == 0 && length > 0) {
+            val index = parentView!!.indexOfChild(editText)
+            if (index == 0)
+                return false
+            nextFocus = inputExtensions!!.getEditTextPrevious(index)
+
+            if (nextFocus != null) {
+                deleteFocusedPrevious(editText)
+                nextFocus.setText("${nextFocus.text}${editText.text}")
+                nextFocus.setSelection(nextFocus.text?.length ?: 0)
+            }
+        }
+        return false
+    }
+
+    private fun checkLastControl(): Boolean {
+        val control = getControlMetadata(parentView!!.getChildAt(0))
+        when (control.type) {
+            EditorType.UL, EditorType.OL -> this.editorSettings.parentView!!.removeAllViews()
+            else -> {}
+        }
+
+        return false
+    }
+
+    private fun onViewTouched(motionEvent: MotionEvent) {
+        var position = -1
+        for (i in 0 until childCount) {
+            val withinBound = isViewInBounds(getChildAt(i), motionEvent.x, motionEvent.y)
+            if (withinBound) {
+                position = i
+            }
+        }
+
+        if (position == -1) {
+            var doInsert = true
+            if (getControlType(getChildAt(childCount - 1)) === EditorType.INPUT) {
+                val editText = getChildAt(childCount - 1) as CustomEditText
+                if (TextUtils.isEmpty(editText.text)) {
+                    doInsert = false
+                }
+            }
+            if (doInsert)
+                inputExtensions!!.insertEditText(childCount, null)
+        }
+    }
+
+    private fun serializeContent(_state: EditorContent?): String {
+        return editorSettings.gson.toJson(_state)
+    }
+
+    private fun parseHtml(htmlString: String) {
+        val doc = Jsoup.parse(htmlString)
+        for (element in doc.body().children()) {
+            if (!HTMLExtensions.matchesTag(element.tagName().toLowerCase(Locale.ROOT))) {
+                val tag = element.attr("data-tag")
+                if (tag != "macro") {
+                    continue
+                }
+            }
+            buildNodeFromHTML(element)
+        }
+    }
+
+    private fun removeParent(view: View): Int {
         val indexOfDeleteItem = this.editorSettings.parentView!!.indexOfChild(view)
         var nextItem: View? = null
         var nextFocusIndex = -1
@@ -540,95 +510,5 @@ open class EditorCore(context: Context, attrs: AttributeSet) : LinearLayout(cont
             this.editorSettings.activeView = nextItem
         }
         return indexOfDeleteItem
-    }
-
-
-    fun getStateFromString(content: String?): EditorContent {
-        var content = content
-        if (content == null) {
-            content = getValue("editorState", "")
-        }
-        return editorSettings.gson.fromJson(content, EditorContent::class.java)
-    }
-
-    private fun getValue(Key: String, defaultVal: String): String? {
-        val _Preferences = PreferenceManager.getDefaultSharedPreferences(this.context)
-        return _Preferences.getString(Key, defaultVal)
-
-    }
-
-    protected fun putValue(Key: String, Value: String) {
-        val _Preferences = PreferenceManager.getDefaultSharedPreferences(this.context)
-        val editor = _Preferences.edit()
-        editor.putString(Key, Value)
-        editor.apply()
-    }
-
-
-    private fun getNodeInstance(view: View): Node {
-        val node = Node()
-        val type = getControlType(view)
-        node.type = type
-        node.content = ArrayList()
-        return node
-    }
-
-
-    fun isLastRow(view: View): Boolean {
-        val index = this.editorSettings.parentView!!.indexOfChild(view)
-        val length = this.editorSettings.parentView!!.childCount
-        return length - 1 == index
-    }
-
-
-    open fun onKey(v: View, keyCode: Int, event: KeyEvent, editText: CustomEditText): Boolean {
-        if (keyCode != KeyEvent.KEYCODE_DEL) {
-            return false
-        }
-        if (inputExtensions!!.isEditTextEmpty(editText)) {
-            deleteFocusedPrevious(editText)
-            val controlCount = parentChildCount
-            return if (controlCount == 1) checkLastControl() else false
-        }
-        val length = editText.text?.length ?: 0
-        val selectionStart = editText.selectionStart
-
-        val editorType = getControlType(this.editorSettings.activeView)
-        val nextFocus: CustomEditText?
-        if (selectionStart == 0 && length > 0) {
-            if (editorType === EditorType.UL_LI || editorType === EditorType.OL_LI) {
-                //now that we are inside the edittext, focus inside it
-                val index = listItemExtensions!!.getIndexOnEditorByEditText(editText)
-                if (index == 0) {
-                    deleteFocusedPrevious(editText)
-                }
-            } else {
-                val index = parentView!!.indexOfChild(editText)
-                if (index == 0)
-                    return false
-                nextFocus = inputExtensions!!.getEditTextPrevious(index)
-
-                if (nextFocus != null) {
-                    deleteFocusedPrevious(editText)
-                    nextFocus.setText(nextFocus.text.toString() + editText.text.toString())
-                    nextFocus.setSelection(nextFocus.text?.length ?: 0)
-                }
-            }
-        }
-        return false
-    }
-
-    private fun checkLastControl(): Boolean {
-        val control = getControlMetadata(parentView!!.getChildAt(0)) ?: return false
-        when (control.type) {
-            EditorType.UL, EditorType.OL -> this.editorSettings.parentView!!.removeAllViews()
-        }
-
-        return false
-    }
-
-    override fun onTouch(view: View, motionEvent: MotionEvent): Boolean {
-        ___onViewTouched(view, motionEvent)
-        return false
     }
 }

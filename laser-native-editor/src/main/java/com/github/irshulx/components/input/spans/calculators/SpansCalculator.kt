@@ -15,8 +15,10 @@ abstract class SpansCalculator<T>(spansReader: SpansWorkerRead) {
         val spansInText = mutableMapOf<SpanInfo<T>, CharacterStyle>()
 
         spansReader.getSpansWithIntervals<CharacterStyle>(getSpanClass())
-            .map {
-                createSpanInfo(it.spanInterval, getSpanValue(it.span))
+            .forEach {
+                val spanInfo = createSpanInfo(it.spanInterval, getSpanValue(it.span))
+                spans.add(spanInfo)
+                spansInText[spanInfo] = it.span
             }
 
         this.spans = spans

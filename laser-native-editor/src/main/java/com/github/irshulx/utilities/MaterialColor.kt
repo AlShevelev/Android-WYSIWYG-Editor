@@ -6,6 +6,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import com.github.irshulx.R
 
+@Suppress("unused")
 enum class MaterialColor(@ColorRes val value: Int) {
     BLACK(R.color.black),
     WHITE(R.color.white),

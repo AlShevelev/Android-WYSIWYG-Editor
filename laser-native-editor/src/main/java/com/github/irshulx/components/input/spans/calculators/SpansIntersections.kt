@@ -1,6 +1,6 @@
 package com.github.irshulx.components.input.spans.calculators
 
-class SpansIntersections<T>() {
+class SpansIntersections<T> {
     val spansIntersectFull = mutableListOf<SpanInfo<T>>()
 
     val spansInsideFull = mutableListOf<SpanInfo<T>>()

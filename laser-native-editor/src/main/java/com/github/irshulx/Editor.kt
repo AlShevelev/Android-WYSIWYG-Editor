@@ -2,19 +2,17 @@ package com.github.irshulx
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.text.Editable
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.View
 import com.github.irshulx.components.input.LinkInfo
-
 import com.github.irshulx.components.input.edit_text.CustomEditText
-import com.github.irshulx.models.EditorTextStyle
 import com.github.irshulx.models.EditorContent
+import com.github.irshulx.models.EditorTextStyle
 import com.github.irshulx.models.RenderType
 import com.github.irshulx.utilities.MaterialColor
-import com.google.android.material.resources.MaterialResources
 
+@Suppress("KDocUnresolvedReference")
 class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs) {
     /**
      * @param the value is true if some text is selected, otherwise it's false
@@ -35,76 +33,6 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
 
     val contentAsHTML: String
         get() = htmlContent
-
-    //region Miscellanious getters and setters
-
-    /**
-     * Input extension
-     */
-    /**
-     * size in sp
-     * @param size
-     */
-    var h1TextSize: Int
-        get() = inputExtensions!!.h1TextSize
-        set(size) {
-            inputExtensions!!.h1TextSize = size
-        }
-
-    /**
-     * size in sp
-     * @param size
-     */
-    var h2TextSize: Int
-        get() = inputExtensions!!.h2TextSize
-        set(size) {
-            inputExtensions!!.h2TextSize = size
-        }
-
-    /**
-     * size in sp
-     * @param size
-     */
-    var h3TextSize: Int
-        get() = inputExtensions!!.h3TextSize
-        set(size) {
-            inputExtensions!!.h3TextSize = size
-        }
-
-    /**
-     * setup the fontfaces for editor content
-     * For eg:
-     * Map<Integer></Integer>, String> typefaceMap = new HashMap<>();
-     * typefaceMap.put(Typeface.NORMAL,"fonts/GreycliffCF-Medium.ttf");
-     * typefaceMap.put(Typeface.BOLD,"fonts/GreycliffCF-Bold.ttf");
-     * typefaceMap.put(Typeface.ITALIC,"fonts/GreycliffCF-Medium.ttf");
-     * typefaceMap.put(Typeface.BOLD_ITALIC,"fonts/GreycliffCF-Medium.ttf");
-     *
-     * @param map
-     */
-
-    var contentTypeface: Map<Int, String>?
-        get() = inputExtensions!!.contentTypeface
-        set(map) {
-            inputExtensions!!.contentTypeface = map
-        }
-
-    /**
-     * setup the fontfaces for editor heding tags (h1,h2,h3)
-     * for Eg:
-     * Map<Integer></Integer>, String> typefaceMap = new HashMap<>();
-     * typefaceMap.put(Typeface.NORMAL,"fonts/GreycliffCF-Medium.ttf");
-     * typefaceMap.put(Typeface.BOLD,"fonts/GreycliffCF-Bold.ttf");
-     * typefaceMap.put(Typeface.ITALIC,"fonts/GreycliffCF-Medium.ttf");
-     * typefaceMap.put(Typeface.BOLD_ITALIC,"fonts/GreycliffCF-Medium.ttf");
-     *
-     * @param map
-     */
-    var headingTypeface: Map<Int, String>?
-        get() = inputExtensions!!.headingTypeface
-        set(map) {
-            inputExtensions!!.headingTypeface = map
-        }
 
     init {
         super.editorListener = null
@@ -134,50 +62,12 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
         renderEditorFromHtml(HtmlString)
     }
 
-    fun render() {
-        if (renderType === RenderType.EDITOR) {
-            inputExtensions!!.insertEditText(0, this.placeHolder, null)
-        }
-    }
-
-    private fun restoreState() {
-        val state = getStateFromString(null)
-        render(state)
-    }
-
     public override fun clearAllContents() {
         super.clearAllContents()
         if (renderType === RenderType.EDITOR) {
-            inputExtensions!!.insertEditText(0, this.placeHolder, null)
+            inputExtensions!!.insertEditText(0, null)
         }
     }
-
-    /**
-     * size in sp
-     * @param size
-     */
-    fun setNormalTextSize(size: Int) {
-        inputExtensions!!.normalTextSize = size
-    }
-
-
-    /**
-     * set dafault text color in hex
-     * @param color
-     */
-    fun setEditorTextColor(color: String) {
-        inputExtensions!!.defaultTextColor = color
-    }
-
-    /**
-     * Set the fontface for the editor
-     *
-     */
-    @Deprecated("use {@link #setContentTypeface(Map)} and {@link #setHeadingTypeface(Map)} (Map)} ()} instead.")
-    fun setFontFace(StringResource: Int) {
-        inputExtensions!!.setFontFace(StringResource)
-    }
-
 
     fun updateTextStyle(style: EditorTextStyle) {
         inputExtensions!!.updateTextStyle(style, null)
@@ -191,43 +81,34 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
         inputExtensions!!.insertLink()
     }
 
+    @Suppress("unused")
     fun insertLink(link: String) {
         inputExtensions!!.insertLink(link)
     }
 
-    fun appendText(text: Editable) {
-        inputExtensions!!.appendText(text)
+    fun insertTag(tag: String) {
+        inputExtensions!!.insertTag(tag)
     }
 
-    fun insertTag() {
-        inputExtensions!!.insertTag("mutin_pudak")
+    fun insertMention(mention: String) {
+        inputExtensions!!.insertMention(mention)
     }
 
-    fun insertMention() {
-        inputExtensions!!.insertMention("barklay")
+    fun insertLinkInText(text: String, url: String) {
+        inputExtensions!!.insertLinkInText(LinkInfo(text, url))
     }
 
-    fun insertLinkInText() {
-        inputExtensions!!.insertLinkInText(LinkInfo("Google", "https://www.google.com"))
+    fun editTag(tag: String) {
+        inputExtensions!!.editTag(tag)
     }
 
-    fun editTag() {
-        inputExtensions!!.editTag("blah_blah")
+    fun editMention(mention: String) {
+        inputExtensions!!.editMention(mention)
     }
 
-    fun editMention() {
-        inputExtensions!!.editMention("suvorov")
+    fun editLinkInText(text: String, url: String) {
+        inputExtensions!!.editLinkInText(LinkInfo(text, url))
     }
-
-    fun editLinkInText() {
-        inputExtensions!!.editLinkInText(LinkInfo("Yandex", "https://yandex.ru"))
-    }
-
-    /*
-         *
-         * Divider extension
-         *
-         */
 
     fun setDividerLayout(layout: Int) {
         this.dividerExtensions!!.setDividerLayout(layout)
@@ -236,12 +117,6 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
     fun insertDivider() {
         dividerExtensions!!.insertDivider(-1)
     }
-
-    /*
-         *
-         * Image Extension
-         *
-         */
 
     fun openImagePicker() {
         imageExtensions!!.openImageGallery()
@@ -255,23 +130,10 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
         imageExtensions!!.onPostUpload(url, imageId)
     }
 
+    @Suppress("unused")
     fun onImageUploadFailed(imageId: String) {
         imageExtensions!!.onPostUpload(null, imageId)
     }
-
-    /*
-     *
-     *List Item extension
-     *
-     */
-    fun setListItemLayout(layout: Int) {
-        this.listItemExtensions!!.setListItemTemplate(layout)
-    }
-
-    fun insertList(isOrdered: Boolean) {
-        this.listItemExtensions!!.insertlist(isOrdered)
-    }
-
 
     override fun onKey(v: View, keyCode: Int, event: KeyEvent, editText: CustomEditText): Boolean {
         val onKey = super.onKey(v, keyCode, event, editText)
@@ -280,19 +142,18 @@ class Editor(context: Context, attrs: AttributeSet) : EditorCore(context, attrs)
         return onKey
     }
 
+    @Suppress("unused")
     fun setLineSpacing(lineSpacing: Float) {
         this.inputExtensions!!.setLineSpacing(lineSpacing)
     }
 
-    fun setListItemLineSpacing(lineSpacing: Float) {
-        this.listItemExtensions!!.setLineSpacing(lineSpacing)
-    }
-
-    fun insertMacro(name: String, view: View, settings: MutableMap<String, Any>) {
-        this.macroExtensions!!.insertMacro(name, view, settings, -1)
-    }
-
     fun setOnSelectionTextChangeListener(listener: ((Boolean) -> Unit)?) {
         inputExtensions?.setOnSelectionChangeListener(listener)
+    }
+
+    private fun render() {
+        if (renderType === RenderType.EDITOR) {
+            inputExtensions!!.insertEditText(0, null)
+        }
     }
 }

@@ -8,5 +8,4 @@ class Node {
     var editorTextStyles: MutableList<EditorTextStyle> = mutableListOf()
 
     var childs: MutableList<Node>? = null
-    var macroSettings: MutableMap<String, Any>? = null
 }

@@ -6,16 +6,16 @@ import android.view.inputmethod.InputConnectionWrapper
 import com.google.android.material.textfield.TextInputEditText
 
 class CustomInputConnection(
-        private val editText: TextInputEditText,
-        target: InputConnection,
-        mutable: Boolean
+    private val editText: TextInputEditText,
+    target: InputConnection,
+    mutable: Boolean
 ) : InputConnectionWrapper(target, mutable) {
 
     override fun sendKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_DEL) {
-            return super.sendKeyEvent(event)
-        } else if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-            return super.sendKeyEvent(event)
+        if(event.action == KeyEvent.ACTION_DOWN) {
+            if(event.keyCode == KeyEvent.KEYCODE_DEL || event.keyCode == KeyEvent.KEYCODE_ENTER) {
+                return super.sendKeyEvent(event)
+            }
         }
         return false
     }

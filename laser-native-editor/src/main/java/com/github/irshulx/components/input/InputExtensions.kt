@@ -26,7 +26,6 @@ import com.github.irshulx.EditorComponent
 import com.github.irshulx.EditorCore
 import com.github.irshulx.R
 import com.github.irshulx.components.ComponentsWrapper
-import com.github.irshulx.components.ListItemExtensions
 import com.github.irshulx.components.input.edit_text.CustomEditText
 import com.github.irshulx.components.input.spans.calculators.ColorSpansCalculator
 import com.github.irshulx.components.input.spans.calculators.CreateSpanOperation
@@ -38,24 +37,18 @@ import com.github.irshulx.components.input.spans.custom.TagSpan
 import com.github.irshulx.components.input.spans.spans_worker.SpansWorkerImpl
 import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.InputMetadata
-import com.github.irshulx.utilities.FontCache
-import com.github.irshulx.utilities.MaterialColor
-import com.github.irshulx.utilities.Utilities
+import com.github.irshulx.utilities.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
-import java.util.regex.Pattern
 import kotlin.reflect.KClass
 
+@Suppress("KDocUnresolvedReference")
 class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(editorCore) {
-    var defaultTextColor = "#000000"
-    var h1TextSize = 23
-    var h2TextSize = 20
-    var h3TextSize = 18
+    var defaultTextColor = Color.BLACK
+
     var normalTextSize = 16
-    private var fontFace = R.string.fontFamily__serif
-    var contentTypeface: Map<Int, String>? = null
-    var headingTypeface: Map<Int, String>? = null
+
     private var lineSpacing = -1f
 
     @ColorInt
@@ -69,28 +62,17 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
      */
     private var onSelectionChangeListener: ((Boolean) -> Unit)? = null
 
-    fun getFontFace(): String {
-        return editorCore.context.resources.getString(fontFace)
-    }
+    override fun getContent(view: View): Node =
+        this.getNodeInstance(view)
+            .apply {
+                content!!.add((view as EditText).text.toHtml())
+            }
 
-    fun setFontFace(fontFace: Int) {
-        this.fontFace = fontFace
-    }
-
-    override fun getContent(view: View): Node {
-        val node = this.getNodeInstance(view)
-        val tag = view.getTag() as InputMetadata
-        node.content!!.add(Html.toHtml((view as EditText).text))
-        return node
-    }
-
-    override fun getContentAsHTML(node: Node, content: EditorContent): String {
-        return getInputHtml(node)
-    }
+    override fun getContentAsHTML(node: Node, content: EditorContent): String = getInputHtml()
 
     override fun renderEditorFromState(node: Node, content: EditorContent) {
         val text = node.content!![0]
-        val view = insertEditText(editorCore.childCount, editorCore.placeHolder, text)
+        val view = insertEditText(editorCore.childCount, text)
         applyTextSettings(node, view)
     }
 
@@ -98,12 +80,12 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         val text: String
         val count: Int
         val tv: TextView
-        val tag = HtmlTag.valueOf(element.tagName().toLowerCase())
-        when (tag) {
+
+        when (HtmlTag.valueOf(element.tagName().toLowerCase(Locale.ROOT))) {
             HtmlTag.p, HtmlTag.div -> {
                 text = element.html()
                 count = editorCore.parentView!!.childCount
-                tv = insertEditText(count, null, text)
+                tv = insertEditText(count, text)
                 applyStyles(tv, element)
             }
 
@@ -116,13 +98,8 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         this.componentsWrapper = componentsWrapper
     }
 
-    internal fun GetSanitizedHtml(text: CharSequence): CharSequence {
-        val spanned = Html.fromHtml(text.toString())
-        return noTrailingwhiteLines(spanned)
-    }
-
     fun setText(textView: TextView, text: CharSequence) {
-        val toReplace = GetSanitizedHtml(text)
+        val toReplace = getSanitizedHtml(text)
         textView.text = toReplace
     }
 
@@ -227,12 +204,11 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             setText(editText, text)
         }
 
-        /**
-         * create tag for the editor
-         */
+        // create tag for the editor
         val metadata = InputMetadata(EditorType.INPUT)
         editText.tag = metadata
 
+        @Suppress("DEPRECATION")
         editText.setBackgroundDrawable(ContextCompat.getDrawable(this.editorCore.context, R.drawable.invisible_edit_text))
 
         editText.setOnKeyListener { v, keyCode, event ->
@@ -265,23 +241,18 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             }
 
             override fun afterTextChanged(s: Editable) {
-
-                var text = Html.toHtml(editText.text)
                 val tag = editText.getTag(R.id.control_tag)
-                if (s.length == 0 && tag != null)
-                    editText.hint = tag.toString()
-                if (s.length > 0) {
-                    /*
-                     * if user had pressed enter, replace it with br
-                     */
-                    for (i in 0 until s.length) {
-                        if (s[i] == '\n') {
-                            val subChars = s.subSequence(0, i)
-                            val ssb = SpannableStringBuilder(subChars)
-                            text = Html.toHtml(ssb)
-                            if (text.length > 0)
-                                setText(editText, text)
 
+                if (s.isEmpty() && tag != null)
+                    editText.hint = tag.toString()
+
+                if (s.isNotEmpty()) {
+                    // if user had pressed enter, replace it with br
+                    for (i in s.indices) {
+                        if (s[i] == '\n') {
+                            val htmlText = SpannableStringBuilder(s.subSequence(0, i)).toHtml()
+                            if (htmlText.isNotEmpty())
+                                setText(editText, htmlText)
 
                             if (i + 1 == s.length) {
                                 s.clear()
@@ -295,20 +266,20 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                                 editText.setTag(R.id.control_tag, hint)
                             }
                             val position = index + 1
-                            var newText: CharSequence? = null
                             val editable = SpannableStringBuilder()
                             val lastIndex = s.length
                             val nextIndex = i + 1
+
                             if (nextIndex < lastIndex) {
-                                newText = s.subSequence(nextIndex, lastIndex)
-                                for (j in 0 until newText.length) {
+                                val newText = s.subSequence(nextIndex, lastIndex)
+                                for (j in newText.indices) {
                                     editable.append(newText[j])
                                     if (newText[j] == '\n') {
                                         editable.append('\n')
                                     }
                                 }
                             }
-                            insertEditText(position, hint, editable)
+                            insertEditText(position, editable)
                             break
                         }
                     }
@@ -349,15 +320,14 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
     }
 
     private fun addEditableStyling(editText: TextView) {
-        editText.typeface = getTypeface(Typeface.NORMAL)
         editText.isFocusableInTouchMode = true
         editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, normalTextSize.toFloat())
-        editText.setTextColor(Color.parseColor(this.defaultTextColor))
+        editText.setTextColor(this.defaultTextColor)
         editText.setPadding(0, 30, 0, 30)
     }
 
 
-    fun insertEditText(position: Int, hint: String?, text: CharSequence?): TextView {
+    fun insertEditText(position: Int, text: CharSequence?): TextView {
         val nextHint = if (isLastText(position)) null else editorCore.placeHolder
         if (editorCore.renderType === RenderType.EDITOR) {
 
@@ -427,72 +397,65 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             EditorTextStyle.ITALIC -> Typeface.ITALIC
             EditorTextStyle.BOLD -> Typeface.BOLD
             EditorTextStyle.BOLD_ITALIC -> Typeface.BOLD_ITALIC
-            else -> throw UnsupportedOperationException("This style is not supported: $style")
         }
 
     fun insertLink() {
         val inputAlert = AlertDialog.Builder(this.editorCore.context)
         inputAlert.setTitle("Add a Link")
         val userInput = EditText(this.editorCore.context)
-        //dont forget to add some margins on the left and right to match the title
+
+        //don't forget to add some margins on the left and right to match the title
         userInput.hint = "type the URL here"
         userInput.inputType = InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT
         inputAlert.setView(userInput)
-        inputAlert.setPositiveButton("INSERT") { dialog, which ->
+
+        inputAlert.setPositiveButton("INSERT") { _, _ ->
             val userInputValue = userInput.text.toString()
             insertLink(userInputValue)
         }
-        inputAlert.setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
+        inputAlert.setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
         val alertDialog = inputAlert.create()
         alertDialog.show()
-    }
-
-    fun appendText(text: Editable) {
-
     }
 
     fun insertLink(uri: String) {
         val editorType = editorCore.getControlType(editorCore.activeView)
         val editText = editorCore.activeView as EditText?
+
         if (editorType === EditorType.INPUT || editorType === EditorType.UL_LI) {
-            var text = Html.toHtml(editText!!.text)
-            if (TextUtils.isEmpty(text))
+            var text = editText!!.text.toHtml()
+
+            if (TextUtils.isEmpty(text)) {
                 text = "<p dir=\"ltr\"></p>"
+            }
+
             text = trimLineEnding(text)
-            val _doc = Jsoup.parse(text)
-            val x = _doc.select("p")
+            val doc = Jsoup.parse(text)
+            val x = doc.select("p")
             val existing = x[0].html()
             x[0].html("$existing <a href='$uri'>$uri</a>")
-            val toTrim = Html.fromHtml(x.toString())
-            val trimmed = noTrailingwhiteLines(toTrim)
+            val toTrim = x.toString().fromHtml()
+            val trimmed = noTrailingWhiteLines(toTrim)
             editText.setText(trimmed)   //
             editText.setSelection(editText.text.length)
         }
     }
 
-    fun noTrailingwhiteLines(text: CharSequence): CharSequence {
-        var text = text
-        if (text.length == 0)
-            return text
-        while (text[text.length - 1] == '\n') {
-            text = text.subSequence(0, text.length - 1)
+    fun noTrailingWhiteLines(text: CharSequence): CharSequence {
+        var editedText = text
+
+        if (editedText.isEmpty()) {
+            return editedText
         }
-        return text
+
+        while (editedText[editedText.length - 1] == '\n') {
+            editedText = editedText.subSequence(0, editedText.length - 1)
+        }
+
+        return editedText
     }
 
-    fun noLeadingwhiteLines(text: CharSequence): CharSequence {
-        var text = text
-        if (text.length == 0)
-            return text
-        while (text[0] == '\n') {
-            text = text.subSequence(1, text.length)
-        }
-        return text
-    }
-
-    fun isEditTextEmpty(editText: EditText): Boolean {
-        return editText.text.toString().trim { it <= ' ' }.length == 0
-    }
+    fun isEditTextEmpty(editText: EditText): Boolean = editText.text.toString().trim { it <= ' ' }.isEmpty()
 
     private fun trimLineEnding(s: String): String {
         return if (s[s.length - 1] == '\n') {
@@ -500,22 +463,8 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         } else s
     }
 
-    /**
-     * returns the appropriate typeface
-     *
-     * @param mode  => whether heading (0) or content(1)
-     * @param style => NORMAL, BOLD, BOLD_ITALIC, ITALIC
-     * @return typeface
-     */
-    fun getTypeface(style: Int): Typeface? =
-        if (contentTypeface == null) {
-            Typeface.create(getFontFace(), style)
-        } else {
-            FontCache[contentTypeface!![style]!!, editorCore.context]
-        }
-
     private fun setFocus(view: CustomEditText) {
-        if (editorCore.isStateFresh && !editorCore.autoFucus) {
+        if (editorCore.isStateFresh && !editorCore.autoFocus) {
             editorCore.isStateFresh = false
             return
         }
@@ -538,10 +487,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
                 customEditText = view as CustomEditText
                 continue
             }
-            if (editorType === EditorType.OL || editorType === EditorType.UL) {
-                componentsWrapper!!.listItemExtensions!!.setFocusToList(view, ListItemExtensions.POSITION_START)
-                editorCore.activeView = view
-            }
         }
         return customEditText
     }
@@ -555,10 +500,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             if (editorType === EditorType.INPUT) {
                 setFocus(view as CustomEditText)
                 break
-            }
-            if (editorType === EditorType.OL || editorType === EditorType.UL) {
-                componentsWrapper!!.listItemExtensions!!.setFocusToList(view, ListItemExtensions.POSITION_START)
-                editorCore.activeView = view
             }
         }
     }
@@ -574,61 +515,10 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         }
     }
 
-    fun getInputHtml(item: Node): String {
-        return ""
-//        var isParagraph = true
-//        var tmpl = componentsWrapper!!.htmlExtensions!!.getTemplateHtml(item.type!!)
-//        //  CharSequence content= android.text.Html.fromHtml(item.content.get(0)).toString();
-//        //  CharSequence trimmed= editorCore.getInputExtensions().noTrailingwhiteLines(content);
-//        val trimmed = Jsoup.parse(item.content!![0]).body().select("p").html()
-//        val styles = HashMap<Enum<*>, String>()
-//        if (item.styleSpans!!.size > 0) {
-//            for (style in item.styleSpans!!) {
-//                when (style) {
-//                    EditorTextStyle.BOLD -> tmpl = tmpl.replace("{{\$content}}", "<b>{{\$content}}</b>")
-//                    EditorTextStyle.BOLD_ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<b><i>{{\$content}}</i></b>")
-//                    EditorTextStyle.ITALIC -> tmpl = tmpl.replace("{{\$content}}", "<i>{{\$content}}</i>")
-//                    EditorTextStyle.NORMAL -> {
-//                        tmpl = tmpl.replace("{{\$tag}}", "p")
-//                        isParagraph = true
-//                    }
-//                }
-//            }
-//        }
-//
-//        styles[TEXT_COLOR] = "color:" + item.colorSpans!!.textColor!!
-//
-//        if (item.type === EditorType.OL_LI || item.type === EditorType.UL_LI) {
-//            tmpl = tmpl.replace("{{\$tag}}", "span")
-//        } else if (isParagraph) {
-//            tmpl = tmpl.replace("{{\$tag}}", "p")
-//        }
-//        tmpl = tmpl.replace("{{\$content}}", trimmed)
-//        tmpl = tmpl.replace(" {{\$style}}", createStyleTag(styles))
-//        return tmpl
-    }
+    fun getInputHtml(): String = ""
 
-    private fun createStyleTag(styles: Map<Enum<*>, String>): String {
-        var tmpl = " style=\"{{builder}}\""
-
-        val builder = StringBuilder()
-        for ((_, value) in styles) {
-            builder.append(value).append(";")
-        }
-        tmpl = tmpl.replace("{{builder}}", builder.toString())
-        return tmpl
-    }
-
+    @Suppress("UNUSED_PARAMETER")
     fun applyTextSettings(node: Node, view: TextView) {
-//        if (node.styleSpans != null) {
-//            for (style in node.styleSpans!!) {
-//                updateTextStyle(style, view)
-//            }
-//
-//            if (!TextUtils.isEmpty(node.colorSpans!!.textColor)) {
-//                updateTextColor(node.colorSpans!!.textColor!!, view)
-//            }
-//        }
     }
 
     fun removeFocus(editText: CustomEditText) {
@@ -649,8 +539,7 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
         textView.layoutParams = params
 
         if (!TextUtils.isEmpty(text)) {
-            val text = Html.fromHtml(text.toString())
-            val toReplace = noTrailingwhiteLines(text)
+            val toReplace = noTrailingWhiteLines(text.toString().fromHtml())
             textView.text = toReplace
             Linkify.addLinks(textView, Linkify.ALL)
         }
@@ -659,20 +548,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
             setLineSpacing(textView, this.lineSpacing)
         }
         return textView
-    }
-
-    private fun translateColor(color: String): String {
-        if (color.contains("rgb")) {
-            val c = Pattern.compile("rgb *\\( *([0-9]+), *([0-9]+), *([0-9]+) *\\)")
-            val m = c.matcher(color)
-            if (m.matches()) {
-                val r = Integer.parseInt(m.group(1))
-                val g = Integer.parseInt(m.group(2))
-                val b = Integer.parseInt(m.group(3))
-                return String.format(Locale.getDefault(), "#%02X%02X%02X", r, g, b)
-            }
-        }
-        return color
     }
 
     private fun insertTag(tagText: String, addSpace: Boolean) =
@@ -773,4 +648,6 @@ class InputExtensions(internal var editorCore: EditorCore) : EditorComponent(edi
 
         return null
     }
+
+    private fun getSanitizedHtml(text: CharSequence): CharSequence = noTrailingWhiteLines(text.toString().fromHtml())
 }

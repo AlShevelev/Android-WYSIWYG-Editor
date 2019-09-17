@@ -1,10 +1,10 @@
 package com.github.irshulx.components
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
-import android.text.Html
 import android.text.TextUtils
 import android.text.util.Linkify
 import android.view.MotionEvent
@@ -29,9 +29,8 @@ import com.github.irshulx.models.*
 import com.github.irshulx.models.control_metadata.ControlMetadata
 import com.github.irshulx.models.control_metadata.ImageDescriptionMetadata
 import com.github.irshulx.models.control_metadata.ImageMetadata
-import com.github.irshulx.models.Node
+import com.github.irshulx.utilities.toHtml
 import org.jsoup.nodes.Element
-import java.text.SimpleDateFormat
 import java.util.*
 
 class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(editorCore) {
@@ -51,9 +50,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         if (!imgTag.path.isNullOrEmpty()) {
             node.content!!.add(imgTag.path!!)
 
-            /**
-             * for subtitle
-             */
+            // for subtitle
             val textView = view.findViewById<EditText>(R.id.descriptionText)
 
             val subTitleNode = getNodeInstance(textView)
@@ -63,7 +60,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             subTitleNode.textSettings = descTag.textSettings
 
             val desc = textView.text
-            subTitleNode.content!!.add(Html.toHtml(desc))
+            subTitleNode.content!!.add(desc.toHtml())
             node.childs = ArrayList()
             node.childs!!.add(subTitleNode)
         }
@@ -71,7 +68,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
     }
 
     override fun getContentAsHTML(node: Node, content: EditorContent): String {
-        val subHtml = componentsWrapper!!.inputExtensions!!.getInputHtml(node.childs!![0])
+        val subHtml = componentsWrapper!!.inputExtensions!!.getInputHtml()
         var html = componentsWrapper!!.htmlExtensions!!.getTemplateHtml(node.type!!)
         html = html.replace("{{\$url}}", node.content!![0])
         html = html.replace("{{\$img-sub}}", subHtml)
@@ -89,7 +86,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
     }
 
     override fun buildNodeFromHTML(element: Element): Node? {
-        val tag = HtmlTag.valueOf(element.tagName().toLowerCase())
+        val tag = HtmlTag.valueOf(element.tagName().toLowerCase(Locale.ROOT))
         if (tag === HtmlTag.div) {
             val dataTag = element.attr("data-tag")
             if (dataTag == "img") {
@@ -118,16 +115,17 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         val intent = Intent()
         intent.type = "image/*"
         intent.action = Intent.ACTION_GET_CONTENT
-        (editorCore.context as Activity).startActivityForResult(Intent.createChooser(intent, "Select an image"), editorCore.PICK_IMAGE_REQUEST)
+        (editorCore.context as Activity).startActivityForResult(Intent.createChooser(intent, "Select an image"), EditorCore.PICK_IMAGE_REQUEST)
     }
 
+    @SuppressLint("InflateParams")
     fun insertImage(image: Bitmap?, url: String?, index: Int, subTitle: String?, appendTextline: Boolean): View {
-        var index = index
+        var determineIndex = index
         var hasUploaded = false
         if (!TextUtils.isEmpty(url)) hasUploaded = true
 
         // Render(getStateFromString());
-        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(R.layout.image_view, null)
+        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(R.layout.widget_image_view, null)
         val imageView = childLayout.findViewById<ImageView>(R.id.imageView)
         val lblStatus = childLayout.findViewById<TextView>(R.id.lblStatus)
 
@@ -138,20 +136,18 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         } else {
             imageView.setImageBitmap(image)
         }
-        val uuid = generateUUID()
-        if (index == -1) {
-            index = editorCore.determineIndex(EditorType.IMG)
+        val uniqueId = UUID.randomUUID().toString()
+        if (determineIndex == -1) {
+            determineIndex = editorCore.determineIndex(EditorType.IMG)
         }
-        showNextInputHint(index)
-        editorCore.parentView!!.addView(childLayout, index)
-
-        //      _Views.add(childLayout);
+        showNextInputHint(determineIndex)
+        editorCore.parentView!!.addView(childLayout, determineIndex)
 
         // set the imageId,so we can recognize later after upload
-        childLayout.tag = createImageTag(if (hasUploaded) url else uuid)
+        childLayout.tag = createImageTag(if (hasUploaded) url else uniqueId)
         desc.tag = createSubTitleTag()
 
-        desc.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
+        desc.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 desc.clearFocus()
             } else {
@@ -160,17 +156,17 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         }
 
         if (editorCore.isLastRow(childLayout) && appendTextline) {
-            componentsWrapper!!.inputExtensions!!.insertEditText(index + 1, null, null)
+            componentsWrapper!!.inputExtensions!!.insertEditText(determineIndex + 1, null)
         }
         if (!subTitle.isNullOrEmpty())
             componentsWrapper!!.inputExtensions!!.setText(desc, subTitle)
 
         if (editorCore.renderType === RenderType.EDITOR) {
-            BindEvents(childLayout)
+            bindEvents(childLayout)
             if (!hasUploaded) {
                 lblStatus.visibility = View.VISIBLE
                 childLayout.findViewById<View>(R.id.progress).visibility = View.VISIBLE
-                editorCore.editorListener!!.onUpload(image!!, uuid)
+                editorCore.editorListener!!.onUpload(image!!, uniqueId)
             }
         } else {
             desc.isEnabled = false
@@ -207,72 +203,7 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
         tv.hint = hint
     }
 
-    fun generateUUID(): String {
-        val df = SimpleDateFormat("yyyyMMddHHmmss")
-        val sdt = df.format(Date(System.currentTimeMillis()))
-        val x = UUID.randomUUID()
-        val y = x.toString().split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        return y[y.size - 1] + sdt
-    }
-
-    fun createSubTitleTag(): ControlMetadata {
-        val subTag = ImageDescriptionMetadata(EditorType.IMG_SUB)
-        subTag.textSettings = TextSettings("#5E5E5E")
-        return subTag
-    }
-
-    fun createImageTag(path: String?): ControlMetadata {
-        val control = ImageMetadata(EditorType.IMG)
-        control.path = path
-        return control
-    }
-
-    /*
-      /used by the renderer to render the image from the Node
-    */
-    fun loadImage(_path: String, node: Node) {
-        val desc = node.content!![0]
-        val childLayout = loadImageRemote(_path, desc)
-        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
-        if (!TextUtils.isEmpty(desc)) {
-            componentsWrapper!!.inputExtensions!!.applyTextSettings(node, text)
-        }
-    }
-
-    fun loadImage(_path: String, node: Element?) {
-        var desc: String? = null
-        if (node != null) {
-            desc = node.html()
-        }
-        val childLayout = loadImageRemote(_path, desc)
-        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
-        if (node != null) {
-            componentsWrapper!!.inputExtensions!!.applyStyles(text, node)
-        }
-    }
-
-    fun loadImageRemote(path: String, desc: String?): View {
-        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(R.layout.image_view, null)
-        val imageView = childLayout.findViewById<ImageView>(R.id.imageView)
-        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
-
-        childLayout.tag = createImageTag(path)
-        text.tag = createSubTitleTag()
-        if (!desc.isNullOrEmpty()) {
-            componentsWrapper!!.inputExtensions!!.setText(text, desc)
-        }
-        text.isEnabled = editorCore.renderType === RenderType.EDITOR
-        loadImageUsingLib(path, imageView)
-        editorCore.parentView!!.addView(childLayout)
-
-        if (editorCore.renderType === RenderType.EDITOR) {
-            BindEvents(childLayout)
-        }
-
-        return childLayout
-    }
-
-
+    @SuppressLint("CheckResult")
     fun loadImageUsingLib(path: String, imageView: ImageView) {
         if (requestListener == null) {
             requestListener = object : RequestListener<Drawable> {
@@ -338,11 +269,11 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
     }
 
 
-    private fun BindEvents(layout: View) {
+    private fun bindEvents(layout: View) {
         val imageView = layout.findViewById<ImageView>(R.id.imageView)
-        val btn_remove = layout.findViewById<View>(R.id.btn_remove)
+        val btnRemove = layout.findViewById<View>(R.id.btn_remove)
 
-        btn_remove.setOnClickListener {
+        btnRemove.setOnClickListener {
             val index = editorCore.parentView!!.indexOfChild(layout)
             editorCore.parentView!!.removeView(layout)
             hideInputHint(index)
@@ -354,21 +285,20 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
                 val paddingTop = view.paddingTop
                 val paddingBottom = view.paddingBottom
                 val height = view.height
-                if (event.y < paddingTop) {
-                    editorCore.___onViewTouched(0, editorCore.parentView!!.indexOfChild(layout))
-                } else if (event.y > height - paddingBottom) {
-                    editorCore.___onViewTouched(1, editorCore.parentView!!.indexOfChild(layout))
-                } else {
 
+                when {
+                    event.y < paddingTop -> editorCore.onViewTouched(0, editorCore.parentView!!.indexOfChild(layout))
+                    event.y > height - paddingBottom -> editorCore.onViewTouched(1, editorCore.parentView!!.indexOfChild(layout))
                 }
+
                 return@OnTouchListener false
             }
-            true//hmmmm....
+            true        //hmmmm....
         })
 
-        imageView.setOnClickListener { btn_remove.visibility = View.VISIBLE }
-        imageView.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
-            btn_remove.visibility = if (hasFocus) View.VISIBLE else View.GONE
+        imageView.setOnClickListener { btnRemove.visibility = View.VISIBLE }
+        imageView.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
+            btnRemove.visibility = if (hasFocus) View.VISIBLE else View.GONE
         }
     }
 
@@ -384,5 +314,63 @@ class ImageExtensions(private val editorCore: EditorCore) : EditorComponent(edit
             }
         }
         return null
+    }
+
+    private fun createSubTitleTag(): ControlMetadata {
+        val subTag = ImageDescriptionMetadata(EditorType.IMG_SUB)
+        subTag.textSettings = TextSettings("#5E5E5E")
+        return subTag
+    }
+
+    private fun createImageTag(path: String?): ControlMetadata {
+        val control = ImageMetadata(EditorType.IMG)
+        control.path = path
+        return control
+    }
+
+    /**
+     * used by the renderer to render the image from the Node
+     */
+    private fun loadImage(_path: String, node: Node) {
+        val desc = node.content!![0]
+        val childLayout = loadImageRemote(_path, desc)
+        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
+        if (!TextUtils.isEmpty(desc)) {
+            componentsWrapper!!.inputExtensions!!.applyTextSettings(node, text)
+        }
+    }
+
+    private fun loadImage(_path: String, node: Element?) {
+        var desc: String? = null
+        if (node != null) {
+            desc = node.html()
+        }
+        val childLayout = loadImageRemote(_path, desc)
+        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
+        if (node != null) {
+            componentsWrapper!!.inputExtensions!!.applyStyles(text, node)
+        }
+    }
+
+    @SuppressLint("InflateParams")
+    private fun loadImageRemote(path: String, desc: String?): View {
+        val childLayout = (editorCore.context as Activity).layoutInflater.inflate(R.layout.widget_image_view, null)
+        val imageView = childLayout.findViewById<ImageView>(R.id.imageView)
+        val text = childLayout.findViewById<CustomEditText>(R.id.descriptionText)
+
+        childLayout.tag = createImageTag(path)
+        text.tag = createSubTitleTag()
+        if (!desc.isNullOrEmpty()) {
+            componentsWrapper!!.inputExtensions!!.setText(text, desc)
+        }
+        text.isEnabled = editorCore.renderType === RenderType.EDITOR
+        loadImageUsingLib(path, imageView)
+        editorCore.parentView!!.addView(childLayout)
+
+        if (editorCore.renderType === RenderType.EDITOR) {
+            bindEvents(childLayout)
+        }
+
+        return childLayout
     }
 }
